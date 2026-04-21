@@ -2,74 +2,79 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect } from "react";
 
 export default function MobileMenu({ isOpen, onClose }) {
   const pathname = usePathname();
 
   const navigationLinks = [
-    {
-      label: "Home",
-      href: "/",
-    },
-    {
-      label: "Latest",
-      href: "/latest",
-    },
-    {
-      label: "Trending",
-      href: "/trending",
-    },
-    {
-      label: "Opinion",
-      href: "/opinion",
-    },
-    {
-      label: "Fact Check",
-      href: "/fact-check",
-    },
-    {
-      label: "Timeline",
-      href: "/timeline",
-    },
-    {
-      label: "Newsletter",
-      href: "/newsletter",
-    },
+    { label: "Home", href: "/" },
+    { label: "Latest", href: "/latest" },
+    { label: "Trending", href: "/trending" },
+    { label: "Opinion", href: "/opinion" },
+    { label: "Fact Check", href: "/fact-check" },
+    { label: "Timeline", href: "/timeline" },
+    { label: "Newsletter", href: "/newsletter" },
   ];
 
   const secondaryLinks = [
-    {
-      label: "Bookmarks",
-      href: "/bookmarks",
-    },
-    {
-      label: "Profile",
-      href: "/profile",
-    },
-    {
-      label: "Notifications",
-      href: "/notifications",
-    },
-    {
-      label: "Settings",
-      href: "/settings",
-    },
+    { label: "Bookmarks", href: "/bookmarks" },
+    { label: "Profile", href: "/profile" },
+    { label: "Notifications", href: "/notifications" },
+    { label: "Settings", href: "/settings" },
   ];
 
-  if (!isOpen) return null;
-
   const isActive = (href) => pathname === href;
+
+  /* Close menu when route changes */
+  useEffect(() => {
+    if (isOpen) {
+      onClose();
+    }
+  }, [pathname]);
+
+  /* Prevent body scroll when menu is open */
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "auto";
+    }
+
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, [isOpen]);
+
+  /* ESC key support */
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      window.addEventListener("keydown", handleEscape);
+    }
+
+    return () => {
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
 
   return (
     <>
       {/* Overlay */}
       <div
         onClick={onClose}
-        className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+        className="fixed inset-0 z-[90] bg-black/50 backdrop-blur-sm transition-opacity duration-300"
       />
 
       {/* Drawer */}
-      <aside className="fixed right-0 top-0 z-50 flex h-full w-[85%] max-w-sm flex-col bg-white shadow-2xl">
+      <aside className="fixed right-0 top-0 z-[100] flex h-screen w-[85%] max-w-sm flex-col bg-white shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
           <Link
@@ -82,14 +87,16 @@ export default function MobileMenu({ isOpen, onClose }) {
 
           <button
             onClick={onClose}
-            className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            aria-label="Close menu"
+            className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
           >
-            Close
+            ✕
           </button>
         </div>
 
         {/* Navigation */}
         <div className="flex-1 overflow-y-auto px-6 py-6">
+          {/* Main Navigation */}
           <div>
             <p className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">
               Main Navigation
@@ -113,6 +120,7 @@ export default function MobileMenu({ isOpen, onClose }) {
             </nav>
           </div>
 
+          {/* Secondary Links */}
           <div className="mt-10">
             <p className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
               Account
@@ -143,7 +151,7 @@ export default function MobileMenu({ isOpen, onClose }) {
             <Link
               href="/about"
               onClick={onClose}
-              className="block hover:text-slate-900"
+              className="block transition hover:text-slate-900"
             >
               About
             </Link>
@@ -151,7 +159,7 @@ export default function MobileMenu({ isOpen, onClose }) {
             <Link
               href="/privacy"
               onClick={onClose}
-              className="block hover:text-slate-900"
+              className="block transition hover:text-slate-900"
             >
               Privacy Policy
             </Link>
@@ -159,7 +167,7 @@ export default function MobileMenu({ isOpen, onClose }) {
             <Link
               href="/terms"
               onClick={onClose}
-              className="block hover:text-slate-900"
+              className="block transition hover:text-slate-900"
             >
               Terms of Service
             </Link>
@@ -167,7 +175,7 @@ export default function MobileMenu({ isOpen, onClose }) {
             <Link
               href="/contact"
               onClick={onClose}
-              className="block hover:text-slate-900"
+              className="block transition hover:text-slate-900"
             >
               Contact
             </Link>
