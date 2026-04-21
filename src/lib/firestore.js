@@ -41,7 +41,11 @@ export const getArticleById = async (id) => {
 };
 
 export const getAllArticles = async () => {
-  const q = query(articlesCollection, orderBy("createdAt", "desc"));
+  const q = query(
+    articlesCollection,
+    orderBy("createdAt", "desc")
+  );
+
   const snapshot = await getDocs(q);
 
   return snapshot.docs.map((item) => ({
@@ -69,6 +73,66 @@ export const getArticleBySlug = async (slug) => {
   };
 };
 
+export const getArticlesByCategory = async (category) => {
+  try {
+    const q = query(
+      articlesCollection,
+      where("category", "==", category),
+      orderBy("createdAt", "desc")
+    );
+
+    const snapshot = await getDocs(q);
+
+    return snapshot.docs.map((item) => ({
+      id: item.id,
+      ...item.data(),
+    }));
+  } catch (error) {
+    console.error("getArticlesByCategory error:", error);
+    return [];
+  }
+};
+
+export const getOpinionArticles = async () => {
+  try {
+    const q = query(
+      articlesCollection,
+      where("category", "==", "Opinion"),
+      orderBy("createdAt", "desc")
+    );
+
+    const snapshot = await getDocs(q);
+
+    return snapshot.docs.map((item) => ({
+      id: item.id,
+      ...item.data(),
+    }));
+  } catch (error) {
+    console.error("getOpinionArticles error:", error);
+    return [];
+  }
+};
+
+export const getFactCheckArticles = async () => {
+  try {
+    const q = query(
+      articlesCollection,
+      where("category", "==", "Fact Check"),
+      orderBy("createdAt", "desc")
+    );
+
+    const snapshot = await getDocs(q);
+
+    return snapshot.docs.map((item) => ({
+      id: item.id,
+      ...item.data(),
+    }));
+  } catch (error) {
+    console.error("getFactCheckArticles error:", error);
+    return [];
+  }
+};
+
 export const updateArticleDoc = async (id, data) => {
   const ref = doc(db, "articles", id);
 
@@ -81,6 +145,56 @@ export const updateArticleDoc = async (id, data) => {
 export const deleteArticleDoc = async (id) => {
   const ref = doc(db, "articles", id);
   await deleteDoc(ref);
+};
+
+/* =========================
+   Tags
+========================= */
+
+export const tagsCollection = collection(db, "tags");
+
+export const getAllTags = async () => {
+  try {
+    const snapshot = await getDocs(tagsCollection);
+
+    return snapshot.docs.map((item) => ({
+      id: item.id,
+      ...item.data(),
+    }));
+  } catch (error) {
+    console.error("getAllTags error:", error);
+    return [];
+  }
+};
+
+/* =========================
+   Timeline
+========================= */
+
+export const timelinesCollection = collection(db, "timelines");
+
+export const getTimelineBySlug = async (slug) => {
+  try {
+    const q = query(
+      timelinesCollection,
+      where("slug", "==", slug),
+      limit(1)
+    );
+
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) return null;
+
+    const docItem = snapshot.docs[0];
+
+    return {
+      id: docItem.id,
+      ...docItem.data(),
+    };
+  } catch (error) {
+    console.error("getTimelineBySlug error:", error);
+    return null;
+  }
 };
 
 /* =========================
