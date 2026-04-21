@@ -7,7 +7,7 @@ import {
 import { auth } from "./firebase";
 
 const googleProvider = new GoogleAuthProvider();
-
+//
 googleProvider.setCustomParameters({
   prompt: "select_account",
 });
