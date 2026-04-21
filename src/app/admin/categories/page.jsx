@@ -23,6 +23,9 @@ export default function AdminCategoriesPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+
   useEffect(() => {
     fetchCategories();
   }, []);
@@ -49,6 +52,7 @@ export default function AdminCategoriesPage() {
       setCategories(data);
     } catch (error) {
       console.error("Failed to fetch categories:", error);
+      setError("Failed to fetch categories.");
     } finally {
       setLoading(false);
     }
@@ -111,29 +115,39 @@ export default function AdminCategoriesPage() {
     setEditingId(category.id);
     setError("");
     setSuccess("");
+
     window.scrollTo({
       top: 0,
       behavior: "smooth",
     });
   };
 
-  const handleDelete = async (id) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this category?"
-    );
+  const openDeleteModal = (category) => {
+    setSelectedCategory(category);
+    setShowDeleteModal(true);
+  };
 
-    if (!confirmed) return;
+  const closeDeleteModal = () => {
+    setSelectedCategory(null);
+    setShowDeleteModal(false);
+  };
+
+  const handleDelete = async () => {
+    if (!selectedCategory?.id) return;
 
     try {
-      await deleteDoc(doc(db, "categories", id));
+      await deleteDoc(doc(db, "categories", selectedCategory.id));
 
       setCategories((prev) =>
-        prev.filter((item) => item.id !== id)
+        prev.filter((item) => item.id !== selectedCategory.id)
       );
 
-      if (editingId === id) {
+      if (editingId === selectedCategory.id) {
         resetForm();
       }
+
+      setSuccess("Category deleted successfully.");
+      closeDeleteModal();
     } catch (error) {
       console.error(error);
       setError("Failed to delete category.");
@@ -196,7 +210,7 @@ export default function AdminCategoriesPage() {
                     setSlug(generateSlug(e.target.value));
                   }
                 }}
-                className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-slate-900"
+                className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
               />
             </div>
 
@@ -210,7 +224,7 @@ export default function AdminCategoriesPage() {
                 placeholder="auto-generated-slug"
                 value={slug}
                 onChange={(e) => setSlug(e.target.value)}
-                className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-slate-900"
+                className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
               />
             </div>
 
@@ -294,7 +308,7 @@ export default function AdminCategoriesPage() {
                           </button>
 
                           <button
-                            onClick={() => handleDelete(category.id)}
+                            onClick={() => openDeleteModal(category)}
                             className="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700"
                           >
                             Delete
@@ -309,6 +323,41 @@ export default function AdminCategoriesPage() {
           )}
         </div>
       </section>
+
+      {/* Delete Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <h3 className="text-xl font-bold text-slate-900">
+              Delete Category
+            </h3>
+
+            <p className="mt-3 text-sm leading-7 text-slate-600">
+              Are you sure you want to delete{" "}
+              <span className="font-semibold text-slate-900">
+                "{selectedCategory?.name}"
+              </span>
+              ? This action cannot be undone.
+            </p>
+
+            <div className="mt-8 flex justify-end gap-3">
+              <button
+                onClick={closeDeleteModal}
+                className="rounded-lg border border-slate-300 px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={handleDelete}
+                className="rounded-lg bg-red-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-red-700"
+              >
+                Delete Category
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

@@ -16,9 +16,12 @@ export default function AdminAnalyticsPage() {
     totalBookmarks: 0,
     totalCategories: 0,
     totalTags: 0,
+    totalPolls: 0,
+    totalTimelines: 0,
   });
 
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     fetchAnalytics();
@@ -26,6 +29,9 @@ export default function AdminAnalyticsPage() {
 
   const fetchAnalytics = async () => {
     try {
+      setLoading(true);
+      setError("");
+
       const [
         articlesSnap,
         usersSnap,
@@ -33,6 +39,8 @@ export default function AdminAnalyticsPage() {
         bookmarksSnap,
         categoriesSnap,
         tagsSnap,
+        pollsSnap,
+        timelinesSnap,
       ] = await Promise.all([
         getDocs(collection(db, "articles")),
         getDocs(collection(db, "users")),
@@ -40,6 +48,8 @@ export default function AdminAnalyticsPage() {
         getDocs(collection(db, "bookmarks")),
         getDocs(collection(db, "categories")),
         getDocs(collection(db, "tags")),
+        getDocs(collection(db, "polls")),
+        getDocs(collection(db, "timelines")),
       ]);
 
       setStats({
@@ -49,9 +59,12 @@ export default function AdminAnalyticsPage() {
         totalBookmarks: bookmarksSnap.size,
         totalCategories: categoriesSnap.size,
         totalTags: tagsSnap.size,
+        totalPolls: pollsSnap.size,
+        totalTimelines: timelinesSnap.size,
       });
     } catch (error) {
       console.error("Analytics fetch error:", error);
+      setError("Failed to load analytics data.");
     } finally {
       setLoading(false);
     }
@@ -88,6 +101,16 @@ export default function AdminAnalyticsPage() {
       value: stats.totalTags,
       link: "/admin/tags",
     },
+    {
+      title: "Polls",
+      value: stats.totalPolls,
+      link: "/admin/polls",
+    },
+    {
+      title: "Timelines",
+      value: stats.totalTimelines,
+      link: "/admin/timeline",
+    },
   ];
 
   return (
@@ -103,24 +126,33 @@ export default function AdminAnalyticsPage() {
             Analytics Overview
           </h1>
 
-          <p className="mt-3 text-slate-600">
-            Monitor articles, users, engagement, comments, and overall
-            platform performance for Contextra.
+          <p className="mt-3 max-w-3xl text-slate-600">
+            Monitor articles, users, engagement, comments, polls,
+            timelines, and overall platform performance for Contextra.
           </p>
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
 
         {/* Stats Grid */}
         {loading ? (
           <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center shadow-sm">
-            <p className="text-slate-600">Loading analytics...</p>
+            <p className="text-slate-600">
+              Loading analytics...
+            </p>
           </div>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {cards.map((card, index) => (
               <Link
                 key={index}
                 href={card.link}
-                className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md"
+                className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md hover:border-slate-300"
               >
                 <p className="text-sm font-medium text-slate-500">
                   {card.title}
@@ -147,11 +179,12 @@ export default function AdminAnalyticsPage() {
           <div className="mt-6 grid gap-5 md:grid-cols-2">
             <div className="rounded-2xl border border-slate-200 p-5">
               <h3 className="font-semibold text-slate-900">
-                Most Active Section
+                Content Performance
               </h3>
+
               <p className="mt-2 text-sm text-slate-600">
-                Based on content volume and interaction trends, this
-                section can be expanded later using article analytics.
+                Articles, timelines, and polls help identify what
+                topics are creating the highest engagement.
               </p>
             </div>
 
@@ -159,8 +192,9 @@ export default function AdminAnalyticsPage() {
               <h3 className="font-semibold text-slate-900">
                 Reader Engagement
               </h3>
+
               <p className="mt-2 text-sm text-slate-600">
-                Comments and bookmarks indicate how strongly users are
+                Comments and bookmarks show how strongly users are
                 interacting with editorial content.
               </p>
             </div>
@@ -169,8 +203,9 @@ export default function AdminAnalyticsPage() {
               <h3 className="font-semibold text-slate-900">
                 Growth Opportunity
               </h3>
+
               <p className="mt-2 text-sm text-slate-600">
-                Newsletter subscriptions and returning visitors can be
+                Newsletter subscribers and returning visitors can be
                 tracked in the next analytics phase.
               </p>
             </div>
@@ -179,9 +214,10 @@ export default function AdminAnalyticsPage() {
               <h3 className="font-semibold text-slate-900">
                 SEO Performance
               </h3>
+
               <p className="mt-2 text-sm text-slate-600">
-                Organic traffic from categories, tags, and article pages
-                can later integrate with Google Search Console reports.
+                Categories, tags, and article pages can later be
+                connected with Google Search Console insights.
               </p>
             </div>
           </div>

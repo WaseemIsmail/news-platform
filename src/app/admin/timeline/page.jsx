@@ -27,6 +27,9 @@ export default function AdminTimelinePage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedTimeline, setSelectedTimeline] = useState(null);
+
   useEffect(() => {
     fetchTimelines();
   }, []);
@@ -53,6 +56,7 @@ export default function AdminTimelinePage() {
       setTimelines(data);
     } catch (error) {
       console.error("Failed to fetch timelines:", error);
+      setError("Failed to fetch timelines.");
     } finally {
       setLoading(false);
     }
@@ -136,23 +140,32 @@ export default function AdminTimelinePage() {
     });
   };
 
-  const handleDelete = async (id) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this timeline?"
-    );
+  const openDeleteModal = (timeline) => {
+    setSelectedTimeline(timeline);
+    setShowDeleteModal(true);
+  };
 
-    if (!confirmed) return;
+  const closeDeleteModal = () => {
+    setSelectedTimeline(null);
+    setShowDeleteModal(false);
+  };
+
+  const handleDelete = async () => {
+    if (!selectedTimeline?.id) return;
 
     try {
-      await deleteDoc(doc(db, "timelines", id));
+      await deleteDoc(doc(db, "timelines", selectedTimeline.id));
 
       setTimelines((prev) =>
-        prev.filter((item) => item.id !== id)
+        prev.filter((item) => item.id !== selectedTimeline.id)
       );
 
-      if (editingId === id) {
+      if (editingId === selectedTimeline.id) {
         resetForm();
       }
+
+      setSuccess("Timeline deleted successfully.");
+      closeDeleteModal();
     } catch (error) {
       console.error(error);
       setError("Failed to delete timeline.");
@@ -198,6 +211,7 @@ export default function AdminTimelinePage() {
           )}
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+            {/* Timeline Title */}
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-700">
                 Timeline Title
@@ -214,10 +228,11 @@ export default function AdminTimelinePage() {
                     setSlug(generateSlug(e.target.value));
                   }
                 }}
-                className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-slate-900"
+                className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
               />
             </div>
 
+            {/* Slug */}
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-700">
                 Slug
@@ -228,10 +243,11 @@ export default function AdminTimelinePage() {
                 placeholder="auto-generated-slug"
                 value={slug}
                 onChange={(e) => setSlug(e.target.value)}
-                className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-slate-900"
+                className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
               />
             </div>
 
+            {/* Summary */}
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-700">
                 Summary
@@ -242,11 +258,12 @@ export default function AdminTimelinePage() {
                 placeholder="Enter short timeline summary"
                 value={summary}
                 onChange={(e) => setSummary(e.target.value)}
-                className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-slate-900"
+                className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
               />
             </div>
 
             <div className="grid gap-5 md:grid-cols-2">
+              {/* Category */}
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">
                   Category
@@ -257,10 +274,11 @@ export default function AdminTimelinePage() {
                   placeholder="Politics, Business, Tech..."
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-slate-900"
+                  className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
                 />
               </div>
 
+              {/* Status */}
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">
                   Status
@@ -269,7 +287,7 @@ export default function AdminTimelinePage() {
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
-                  className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-900"
+                  className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
                 >
                   <option value="published">Published</option>
                   <option value="draft">Draft</option>
@@ -278,6 +296,7 @@ export default function AdminTimelinePage() {
               </div>
             </div>
 
+            {/* Buttons */}
             <div className="flex flex-wrap gap-3">
               <button
                 type="submit"
@@ -374,7 +393,7 @@ export default function AdminTimelinePage() {
                           </button>
 
                           <button
-                            onClick={() => handleDelete(timeline.id)}
+                            onClick={() => openDeleteModal(timeline)}
                             className="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700"
                           >
                             Delete
@@ -389,6 +408,41 @@ export default function AdminTimelinePage() {
           )}
         </div>
       </section>
+
+      {/* Delete Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <h3 className="text-xl font-bold text-slate-900">
+              Delete Timeline
+            </h3>
+
+            <p className="mt-3 text-sm leading-7 text-slate-600">
+              Are you sure you want to delete{" "}
+              <span className="font-semibold text-slate-900">
+                "{selectedTimeline?.title}"
+              </span>
+              ? This action cannot be undone.
+            </p>
+
+            <div className="mt-8 flex justify-end gap-3">
+              <button
+                onClick={closeDeleteModal}
+                className="rounded-lg border border-slate-300 px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={handleDelete}
+                className="rounded-lg bg-red-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-red-700"
+              >
+                Delete Timeline
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

@@ -38,10 +38,10 @@ export default function AdminSettingsPage() {
       const snapshot = await getDoc(settingsRef);
 
       if (snapshot.exists()) {
-        setSettings({
-          ...settings,
+        setSettings((prev) => ({
+          ...prev,
           ...snapshot.data(),
-        });
+        }));
       }
     } catch (err) {
       console.error(err);
@@ -93,7 +93,9 @@ export default function AdminSettingsPage() {
       <main className="min-h-screen bg-slate-50">
         <section className="mx-auto max-w-7xl px-4 py-16">
           <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center shadow-sm">
-            <p className="text-slate-600">Loading admin settings...</p>
+            <p className="text-slate-600">
+              Loading admin settings...
+            </p>
           </div>
         </section>
       </main>
@@ -120,32 +122,34 @@ export default function AdminSettingsPage() {
           </p>
         </div>
 
-        {/* Messages */}
+        {/* Success Message */}
         {success && (
           <div className="mb-6 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
             {success}
           </div>
         )}
 
+        {/* Error Message */}
         {error && (
           <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
           </div>
         )}
 
-        {/* Settings Form */}
+        {/* Form */}
         <form
           onSubmit={handleSave}
           className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm"
         >
-          <div className="space-y-8">
-            {/* Basic Settings */}
+          <div className="space-y-10">
+            {/* General Settings */}
             <div>
               <h2 className="text-2xl font-bold text-slate-900">
                 General Settings
               </h2>
 
               <div className="mt-6 grid gap-5 md:grid-cols-2">
+                {/* Site Name */}
                 <div>
                   <label className="mb-2 block text-sm font-medium text-slate-700">
                     Site Name
@@ -156,10 +160,12 @@ export default function AdminSettingsPage() {
                     name="siteName"
                     value={settings.siteName}
                     onChange={handleChange}
-                    className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-slate-900"
+                    placeholder="Enter platform name"
+                    className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
                   />
                 </div>
 
+                {/* Admin Email */}
                 <div>
                   <label className="mb-2 block text-sm font-medium text-slate-700">
                     Admin Email
@@ -170,10 +176,12 @@ export default function AdminSettingsPage() {
                     name="adminEmail"
                     value={settings.adminEmail}
                     onChange={handleChange}
-                    className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-slate-900"
+                    placeholder="admin@contextra.com"
+                    className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
                   />
                 </div>
 
+                {/* Site Description */}
                 <div className="md:col-span-2">
                   <label className="mb-2 block text-sm font-medium text-slate-700">
                     Site Description
@@ -185,19 +193,20 @@ export default function AdminSettingsPage() {
                     value={settings.siteDescription}
                     onChange={handleChange}
                     placeholder="Short SEO-friendly platform description"
-                    className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-slate-900"
+                    className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
                   />
                 </div>
               </div>
             </div>
 
-            {/* Feature Toggles */}
+            {/* Feature Controls */}
             <div>
               <h2 className="text-2xl font-bold text-slate-900">
                 Feature Controls
               </h2>
 
               <div className="mt-6 space-y-5">
+                {/* Allow Comments */}
                 <label className="flex items-center justify-between rounded-2xl border border-slate-200 p-5">
                   <div>
                     <p className="font-medium text-slate-900">
@@ -213,10 +222,11 @@ export default function AdminSettingsPage() {
                     name="allowComments"
                     checked={settings.allowComments}
                     onChange={handleChange}
-                    className="h-5 w-5"
+                    className="h-5 w-5 rounded border-slate-300"
                   />
                 </label>
 
+                {/* Allow Registrations */}
                 <label className="flex items-center justify-between rounded-2xl border border-slate-200 p-5">
                   <div>
                     <p className="font-medium text-slate-900">
@@ -232,10 +242,11 @@ export default function AdminSettingsPage() {
                     name="allowRegistrations"
                     checked={settings.allowRegistrations}
                     onChange={handleChange}
-                    className="h-5 w-5"
+                    className="h-5 w-5 rounded border-slate-300"
                   />
                 </label>
 
+                {/* Newsletter */}
                 <label className="flex items-center justify-between rounded-2xl border border-slate-200 p-5">
                   <div>
                     <p className="font-medium text-slate-900">
@@ -251,10 +262,11 @@ export default function AdminSettingsPage() {
                     name="enableNewsletter"
                     checked={settings.enableNewsletter}
                     onChange={handleChange}
-                    className="h-5 w-5"
+                    className="h-5 w-5 rounded border-slate-300"
                   />
                 </label>
 
+                {/* Maintenance Mode */}
                 <label className="flex items-center justify-between rounded-2xl border border-red-200 bg-red-50 p-5">
                   <div>
                     <p className="font-medium text-red-700">
@@ -270,20 +282,22 @@ export default function AdminSettingsPage() {
                     name="maintenanceMode"
                     checked={settings.maintenanceMode}
                     onChange={handleChange}
-                    className="h-5 w-5"
+                    className="h-5 w-5 rounded border-red-300"
                   />
                 </label>
               </div>
             </div>
 
             {/* Save Button */}
-            <div className="pt-4">
+            <div className="pt-2">
               <button
                 type="submit"
                 disabled={saving}
-                className="rounded-2xl bg-slate-900 px-8 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
+                className="rounded-2xl bg-slate-900 px-8 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {saving ? "Saving Changes..." : "Save Settings"}
+                {saving
+                  ? "Saving Changes..."
+                  : "Save Settings"}
               </button>
             </div>
           </div>

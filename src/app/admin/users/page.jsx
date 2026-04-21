@@ -23,6 +23,9 @@ export default function AdminUsersPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -52,7 +55,9 @@ export default function AdminUsersPage() {
   const stats = useMemo(() => {
     return {
       total: users.length,
-      readers: users.filter((item) => item.role === "reader").length,
+      readers: users.filter(
+        (item) => (item.role || "reader") === "reader"
+      ).length,
       editors: users.filter((item) => item.role === "editor").length,
       admins: users.filter((item) => item.role === "admin").length,
     };
@@ -105,25 +110,32 @@ export default function AdminUsersPage() {
     }
   };
 
-  const handleDeleteUser = async (userId) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this user?"
-    );
+  const openDeleteModal = (user) => {
+    setSelectedUser(user);
+    setShowDeleteModal(true);
+  };
 
-    if (!confirmed) return;
+  const closeDeleteModal = () => {
+    setSelectedUser(null);
+    setShowDeleteModal(false);
+  };
+
+  const handleDeleteUser = async () => {
+    if (!selectedUser?.id) return;
 
     try {
-      setActionLoadingId(userId);
+      setActionLoadingId(selectedUser.id);
       setError("");
       setSuccess("");
 
-      await deleteDoc(doc(db, "users", userId));
+      await deleteDoc(doc(db, "users", selectedUser.id));
 
       setUsers((prev) =>
-        prev.filter((user) => user.id !== userId)
+        prev.filter((user) => user.id !== selectedUser.id)
       );
 
       setSuccess("User deleted successfully.");
+      closeDeleteModal();
     } catch (error) {
       console.error(error);
       setError("Failed to delete user.");
@@ -160,8 +172,9 @@ export default function AdminUsersPage() {
           </h1>
 
           <p className="mt-3 max-w-3xl text-slate-600">
-            View registered users, update permissions, and manage reader,
-            editor, and administrator access across the Contextra platform.
+            View registered users, update permissions, and manage
+            reader, editor, and administrator access across the
+            Contextra platform.
           </p>
         </div>
 
@@ -222,7 +235,7 @@ export default function AdminUsersPage() {
                 placeholder="Search by name or email"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-slate-900"
+                className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
               />
             </div>
 
@@ -234,7 +247,7 @@ export default function AdminUsersPage() {
               <select
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value)}
-                className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-900"
+                className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
               >
                 <option value="all">All Users</option>
                 <option value="reader">Reader</option>
@@ -348,9 +361,7 @@ export default function AdminUsersPage() {
 
                           <button
                             disabled={actionLoadingId === user.id}
-                            onClick={() =>
-                              handleDeleteUser(user.id)
-                            }
+                            onClick={() => openDeleteModal(user)}
                             className="rounded-xl border border-red-300 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-60"
                           >
                             Delete
@@ -365,6 +376,42 @@ export default function AdminUsersPage() {
           )}
         </div>
       </section>
+
+      {/* Delete Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <h3 className="text-xl font-bold text-slate-900">
+              Delete User
+            </h3>
+
+            <p className="mt-3 text-sm leading-7 text-slate-600">
+              Are you sure you want to delete
+              <span className="font-semibold text-slate-900">
+                {" "}
+                "{selectedUser?.fullName || selectedUser?.email}"
+              </span>
+              ? This action cannot be undone.
+            </p>
+
+            <div className="mt-8 flex justify-end gap-3">
+              <button
+                onClick={closeDeleteModal}
+                className="rounded-lg border border-slate-300 px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={handleDeleteUser}
+                className="rounded-lg bg-red-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-red-700"
+              >
+                Delete User
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

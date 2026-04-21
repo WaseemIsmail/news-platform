@@ -15,14 +15,37 @@ import {
 import { db } from "./firebase";
 
 /* =========================
+   Helpers
+========================= */
+
+export const generateSlug = (value = "") => {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .split("-")
+    .filter(Boolean)
+    .slice(0, 6)
+    .join("-");
+};
+
+/* =========================
    Articles
 ========================= */
 
 export const articlesCollection = collection(db, "articles");
 
 export const createArticleDoc = async (data) => {
+  const slug =
+    data?.slug?.trim()
+      ? generateSlug(data.slug)
+      : generateSlug(data?.title || "");
+
   return await addDoc(articlesCollection, {
     ...data,
+    slug,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
@@ -55,9 +78,11 @@ export const getAllArticles = async () => {
 };
 
 export const getArticleBySlug = async (slug) => {
+  const normalizedSlug = generateSlug(slug);
+
   const q = query(
     articlesCollection,
-    where("slug", "==", slug),
+    where("slug", "==", normalizedSlug),
     limit(1)
   );
 
@@ -136,10 +161,18 @@ export const getFactCheckArticles = async () => {
 export const updateArticleDoc = async (id, data) => {
   const ref = doc(db, "articles", id);
 
-  await updateDoc(ref, {
+  const updatedPayload = {
     ...data,
     updatedAt: serverTimestamp(),
-  });
+  };
+
+  if (data?.title || data?.slug) {
+    updatedPayload.slug = data?.slug?.trim()
+      ? generateSlug(data.slug)
+      : generateSlug(data.title || "");
+  }
+
+  await updateDoc(ref, updatedPayload);
 };
 
 export const deleteArticleDoc = async (id) => {
@@ -175,9 +208,11 @@ export const timelinesCollection = collection(db, "timelines");
 
 export const getTimelineBySlug = async (slug) => {
   try {
+    const normalizedSlug = generateSlug(slug);
+
     const q = query(
       timelinesCollection,
-      where("slug", "==", slug),
+      where("slug", "==", normalizedSlug),
       limit(1)
     );
 
@@ -205,7 +240,13 @@ export const commentsCollection = collection(db, "comments");
 
 export const createCommentDoc = async (data) => {
   return await addDoc(commentsCollection, {
-    ...data,
+    articleId: data.articleId || "",
+    articleSlug: data.articleSlug || "",
+    articleTitle: data.articleTitle || "",
+    name: data.name || "Anonymous",
+    comment: data.comment || "",
+    parentId: data.parentId || null,
+    likes: data.likes || 0,
     createdAt: serverTimestamp(),
   });
 };

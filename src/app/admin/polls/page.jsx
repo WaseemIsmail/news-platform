@@ -25,6 +25,9 @@ export default function AdminPollsPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedPoll, setSelectedPoll] = useState(null);
+
   useEffect(() => {
     fetchPolls();
   }, []);
@@ -43,6 +46,7 @@ export default function AdminPollsPage() {
       setPolls(data);
     } catch (error) {
       console.error("Failed to fetch polls:", error);
+      setError("Failed to fetch polls.");
     } finally {
       setLoading(false);
     }
@@ -134,7 +138,11 @@ export default function AdminPollsPage() {
     const existingOptions =
       poll.options?.map((item) => item.label) || ["", ""];
 
-    setOptions(existingOptions.length >= 2 ? existingOptions : ["", ""]);
+    setOptions(
+      existingOptions.length >= 2
+        ? existingOptions
+        : ["", ""]
+    );
 
     setError("");
     setSuccess("");
@@ -145,21 +153,32 @@ export default function AdminPollsPage() {
     });
   };
 
-  const handleDelete = async (id) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this poll?"
-    );
+  const openDeleteModal = (poll) => {
+    setSelectedPoll(poll);
+    setShowDeleteModal(true);
+  };
 
-    if (!confirmed) return;
+  const closeDeleteModal = () => {
+    setSelectedPoll(null);
+    setShowDeleteModal(false);
+  };
+
+  const handleDelete = async () => {
+    if (!selectedPoll?.id) return;
 
     try {
-      await deleteDoc(doc(db, "polls", id));
+      await deleteDoc(doc(db, "polls", selectedPoll.id));
 
-      setPolls((prev) => prev.filter((item) => item.id !== id));
+      setPolls((prev) =>
+        prev.filter((item) => item.id !== selectedPoll.id)
+      );
 
-      if (editingId === id) {
+      if (editingId === selectedPoll.id) {
         resetForm();
       }
+
+      setSuccess("Poll deleted successfully.");
+      closeDeleteModal();
     } catch (error) {
       console.error(error);
       setError("Failed to delete poll.");
@@ -204,6 +223,7 @@ export default function AdminPollsPage() {
           )}
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-6">
+            {/* Poll Question */}
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-700">
                 Poll Question
@@ -214,10 +234,11 @@ export default function AdminPollsPage() {
                 placeholder="Enter poll question"
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
-                className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-slate-900"
+                className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
               />
             </div>
 
+            {/* Poll Options */}
             <div>
               <label className="mb-3 block text-sm font-medium text-slate-700">
                 Poll Options
@@ -236,7 +257,7 @@ export default function AdminPollsPage() {
                       onChange={(e) =>
                         handleOptionChange(index, e.target.value)
                       }
-                      className="flex-1 rounded-2xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-slate-900"
+                      className="flex-1 rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
                     />
 
                     {options.length > 2 && (
@@ -263,6 +284,7 @@ export default function AdminPollsPage() {
               )}
             </div>
 
+            {/* Status */}
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-700">
                 Status
@@ -271,7 +293,7 @@ export default function AdminPollsPage() {
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
-                className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-slate-900"
+                className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
               >
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
@@ -279,6 +301,7 @@ export default function AdminPollsPage() {
               </select>
             </div>
 
+            {/* Buttons */}
             <div className="flex flex-wrap gap-3">
               <button
                 type="submit"
@@ -375,7 +398,7 @@ export default function AdminPollsPage() {
                           </button>
 
                           <button
-                            onClick={() => handleDelete(poll.id)}
+                            onClick={() => openDeleteModal(poll)}
                             className="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700"
                           >
                             Delete
@@ -390,6 +413,42 @@ export default function AdminPollsPage() {
           )}
         </div>
       </section>
+
+      {/* Delete Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <h3 className="text-xl font-bold text-slate-900">
+              Delete Poll
+            </h3>
+
+            <p className="mt-3 text-sm leading-7 text-slate-600">
+              Are you sure you want to delete this poll:
+              <span className="font-semibold text-slate-900">
+                {" "}
+                "{selectedPoll?.question}"
+              </span>
+              ? This action cannot be undone.
+            </p>
+
+            <div className="mt-8 flex justify-end gap-3">
+              <button
+                onClick={closeDeleteModal}
+                className="rounded-lg border border-slate-300 px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={handleDelete}
+                className="rounded-lg bg-red-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-red-700"
+              >
+                Delete Poll
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

@@ -85,9 +85,11 @@ export default function NewArticlePage() {
         <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-700">
           Admin Articles
         </p>
+
         <h1 className="mt-2 text-3xl font-bold text-slate-900">
           Create New Article
         </h1>
+
         <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">
           Publish a new Contextra article with summary, context, and your editorial view.
         </p>
@@ -98,128 +100,151 @@ export default function NewArticlePage() {
         className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-8"
       >
         <div className="grid gap-6 md:grid-cols-2">
+
+          {/* Title */}
           <div className="md:col-span-2">
-            <label className="mb-2 block text-sm font-medium text-slate-700">
+            <label className="mb-2 block text-sm font-medium text-slate-800">
               Title
             </label>
+
             <input
               type="text"
               name="title"
               value={formData.title}
               onChange={handleChange}
               placeholder="Enter article title"
-              className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900"
+              className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
             />
           </div>
 
+          {/* Summary */}
           <div className="md:col-span-2">
-            <label className="mb-2 block text-sm font-medium text-slate-700">
+            <label className="mb-2 block text-sm font-medium text-slate-800">
               Summary
             </label>
+
             <textarea
               name="summary"
               value={formData.summary}
               onChange={handleChange}
-              rows={3}
+              rows={4}
               placeholder="Write a short summary"
-              className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900"
+              className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
             />
           </div>
 
+          {/* Category */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700">
+            <label className="mb-2 block text-sm font-medium text-slate-800">
               Category
             </label>
+
             <select
               name="category"
               value={formData.category}
               onChange={handleChange}
-              className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900"
+              className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
             >
               {CATEGORIES.map((category) => (
-                <option key={category} value={category}>
+                <option
+                  key={category}
+                  value={category}
+                  className="text-slate-900 bg-white"
+                >
                   {category}
                 </option>
               ))}
             </select>
           </div>
 
+          {/* Author */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700">
+            <label className="mb-2 block text-sm font-medium text-slate-800">
               Author
             </label>
+
             <input
               type="text"
               name="author"
               value={formData.author}
               onChange={handleChange}
               placeholder="Author name"
-              className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900"
+              className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
             />
           </div>
 
+          {/* Image URL */}
           <div className="md:col-span-2">
-            <label className="mb-2 block text-sm font-medium text-slate-700">
+            <label className="mb-2 block text-sm font-medium text-slate-800">
               Image URL
             </label>
+
             <input
               type="text"
               name="image"
               value={formData.image}
               onChange={handleChange}
               placeholder="Paste article image URL"
-              className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900"
+              className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
             />
           </div>
 
+          {/* Our View */}
           <div className="md:col-span-2">
-            <label className="mb-2 block text-sm font-medium text-slate-700">
+            <label className="mb-2 block text-sm font-medium text-slate-800">
               Our View
             </label>
+
             <textarea
               name="ourView"
               value={formData.ourView}
               onChange={handleChange}
-              rows={4}
+              rows={5}
               placeholder="Write Contextra's editorial view"
-              className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900"
+              className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
             />
           </div>
 
+          {/* Content */}
           <div className="md:col-span-2">
-            <label className="mb-2 block text-sm font-medium text-slate-700">
+            <label className="mb-2 block text-sm font-medium text-slate-800">
               Content
             </label>
+
             <textarea
               name="content"
               value={formData.content}
               onChange={handleChange}
               rows={10}
               placeholder="Write the full article content"
-              className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900"
+              className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
             />
           </div>
 
+          {/* Tags */}
           <div className="md:col-span-2">
-            <label className="mb-2 block text-sm font-medium text-slate-700">
+            <label className="mb-2 block text-sm font-medium text-slate-800">
               Tags
             </label>
+
             <input
               type="text"
               name="tags"
               value={formData.tags}
               onChange={handleChange}
               placeholder="e.g. economy, inflation, fuel"
-              className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900"
+              className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
             />
+
             <p className="mt-2 text-xs text-slate-500">
               Separate tags with commas.
             </p>
           </div>
         </div>
 
+        {/* Featured */}
         <div className="mt-6">
-          <label className="inline-flex items-center gap-3 text-sm text-slate-700">
+          <label className="inline-flex items-center gap-3 text-sm font-medium text-slate-700">
             <input
               type="checkbox"
               name="featured"
@@ -231,18 +256,21 @@ export default function NewArticlePage() {
           </label>
         </div>
 
+        {/* Error */}
         {error && (
           <div className="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
           </div>
         )}
 
+        {/* Success */}
         {success && (
           <div className="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
             {success}
           </div>
         )}
 
+        {/* Buttons */}
         <div className="mt-8 flex flex-wrap gap-4">
           <button
             type="submit"
