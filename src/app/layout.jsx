@@ -1,4 +1,5 @@
 import "./globals.css";
+import Script from "next/script";
 import { Inter } from "next/font/google";
 import { generateSEO } from "@/lib/seo";
 import { AuthProvider } from "@/context/AuthContext";
@@ -12,6 +13,8 @@ const inter = Inter({
   display: "swap",
 });
 
+const gaId = process.env.NEXT_PUBLIC_GA_ID;
+
 export const metadata = generateSEO({
   title: "Contextra | News, Analysis, Opinion & Timelines",
   description:
@@ -23,6 +26,25 @@ export const metadata = generateSEO({
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {gaId && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
+              strategy="afterInteractive"
+            />
+            <Script id="google-analytics" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${gaId}');
+              `}
+            </Script>
+          </>
+        )}
+      </head>
+
       <body className={`${inter.className} bg-white text-slate-900 antialiased`}>
         <AuthProvider>
           <AppProvider>
