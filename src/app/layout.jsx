@@ -27,6 +27,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <meta
+          name="google-site-verification"
+          content="Tov0yAGszSiqfmTlFnKg_yMBPdfQteNjsFS5Byw3ZWI"
+        />
+
         {gaId && (
           <>
             <Script
