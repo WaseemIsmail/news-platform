@@ -15,13 +15,16 @@ const inter = Inter({
 
 const gaId = process.env.NEXT_PUBLIC_GA_ID;
 
-export const metadata = generateSEO({
-  title: "Contextra | News, Analysis, Opinion & Timelines",
-  description:
-    "Contextra is a modern news platform for breaking stories, deep analysis, opinion pieces, fact checks, and timeline-based reporting.",
-  image: "/images/default-og.jpg",
-  url: "https://contextra.vercel.app",
-});
+export const metadata = {
+  ...generateSEO({
+    title: "Contextra | News, Analysis, Opinion & Timelines",
+    description:
+      "Contextra is a modern news platform for breaking stories, deep analysis, opinion pieces, fact checks, and timeline-based reporting.",
+    image: "/images/default-og.jpg",
+    url: "https://contextra.vercel.app",
+  }),
+  metadataBase: new URL("https://contextra.vercel.app"),
+};
 
 export default function RootLayout({ children }) {
   return (
@@ -50,7 +53,9 @@ export default function RootLayout({ children }) {
         )}
       </head>
 
-      <body className={`${inter.className} bg-white text-slate-900 antialiased`}>
+      <body
+        className={`${inter.className} bg-white text-slate-900 antialiased`}
+      >
         <AuthProvider>
           <AppProvider>
             <NotificationProvider>

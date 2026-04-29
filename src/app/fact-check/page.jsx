@@ -3,6 +3,9 @@ import Image from "next/image";
 import { generateSEO } from "@/lib/seo";
 import { getFactCheckArticles } from "@/lib/firestore";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function generateMetadata() {
   return generateSEO({
     title: "Fact Check | Contextra",
@@ -13,8 +16,62 @@ export async function generateMetadata() {
   });
 }
 
+function formatDate(dateValue) {
+  if (!dateValue) return "";
+
+  try {
+    if (dateValue?.toDate) {
+      return dateValue.toDate().toLocaleDateString();
+    }
+
+    return new Date(dateValue).toLocaleDateString();
+  } catch {
+    return "";
+  }
+}
+
+function getSafeImage(image) {
+  if (!image || typeof image !== "string") {
+    return "/images/default-og.jpg";
+  }
+
+  const trimmedImage = image.trim();
+
+  if (!trimmedImage) {
+    return "/images/default-og.jpg";
+  }
+
+  // Valid local image from public folder
+  // Example: /images/default-og.jpg
+  if (trimmedImage.startsWith("/")) {
+    return trimmedImage;
+  }
+
+  // Valid remote image URL
+  // Example: https://example.com/image.jpg
+  if (
+    trimmedImage.startsWith("https://") ||
+    trimmedImage.startsWith("http://")
+  ) {
+    return trimmedImage;
+  }
+
+  // Invalid image value like: test, abc.jpg, www.example.com/image.jpg
+  return "/images/default-og.jpg";
+}
+
 export default async function FactCheckPage() {
-  const articles = await getFactCheckArticles();
+  let articles = [];
+
+  try {
+    articles = await getFactCheckArticles();
+  } catch (error) {
+    console.error("FactCheckPage load error:", error);
+    articles = [];
+  }
+
+  const featuredArticle = articles?.[0] || null;
+  const otherArticles = articles?.slice(1) || [];
 
   return (
     <main className="min-h-screen bg-white">
@@ -36,16 +93,16 @@ export default async function FactCheckPage() {
         </div>
 
         {/* Featured Section */}
-        {articles?.length > 0 && (
+        {featuredArticle && (
           <div className="mb-14 grid gap-8 lg:grid-cols-2">
             <Link
-              href={`/article/${articles[0].slug}`}
+              href={`/article/${featuredArticle.slug}`}
               className="group"
             >
-              <div className="relative h-[320px] overflow-hidden rounded-3xl">
+              <div className="relative h-[320px] overflow-hidden rounded-3xl bg-slate-100">
                 <Image
-                  src={articles[0].image || "/images/default-og.jpg"}
-                  alt={articles[0].title}
+                  src={getSafeImage(featuredArticle.image)}
+                  alt={featuredArticle.title || "Fact check article image"}
                   fill
                   priority
                   className="object-cover transition duration-500 group-hover:scale-105"
@@ -59,36 +116,39 @@ export default async function FactCheckPage() {
               </p>
 
               <Link
-                href={`/article/${articles[0].slug}`}
+                href={`/article/${featuredArticle.slug}`}
                 className="group"
               >
                 <h2 className="text-3xl font-bold leading-tight text-slate-900 group-hover:text-black">
-                  {articles[0].title}
+                  {featuredArticle.title || "Untitled Fact Check"}
                 </h2>
               </Link>
 
               <p className="mt-4 text-base leading-7 text-slate-600">
-                {articles[0].summary ||
+                {featuredArticle.summary ||
+                  featuredArticle.ourView ||
                   "Explore our full investigation and understand what is verified, misleading, or false."}
               </p>
 
               <div className="mt-6 flex flex-wrap items-center gap-3 text-sm text-slate-500">
-                {articles[0].author && (
-                  <span>By {articles[0].author}</span>
+                {featuredArticle.author && (
+                  <span>By {featuredArticle.author}</span>
                 )}
 
-                {articles[0].publishedAt && (
+                {formatDate(
+                  featuredArticle.publishedAt || featuredArticle.createdAt
+                ) && (
                   <span>
                     •{" "}
-                    {new Date(
-                      articles[0].publishedAt
-                    ).toLocaleDateString()}
+                    {formatDate(
+                      featuredArticle.publishedAt || featuredArticle.createdAt
+                    )}
                   </span>
                 )}
 
-                {articles[0].verdict && (
+                {featuredArticle.verdict && (
                   <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                    {articles[0].verdict}
+                    {featuredArticle.verdict}
                   </span>
                 )}
               </div>
@@ -97,49 +157,58 @@ export default async function FactCheckPage() {
         )}
 
         {/* Grid Section */}
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {articles?.slice(1).map((article) => (
-            <Link
-              key={article.id}
-              href={`/article/${article.slug}`}
-              className="group rounded-3xl border border-slate-200 bg-white p-4 transition hover:shadow-md"
-            >
-              <div className="relative mb-4 h-52 overflow-hidden rounded-2xl">
-                <Image
-                  src={article.image || "/images/default-og.jpg"}
-                  alt={article.title}
-                  fill
-                  className="object-cover transition duration-500 group-hover:scale-105"
-                />
-              </div>
+        {otherArticles.length > 0 && (
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            {otherArticles.map((article) => (
+              <Link
+                key={article.id}
+                href={`/article/${article.slug}`}
+                className="group rounded-3xl border border-slate-200 bg-white p-4 transition hover:shadow-md"
+              >
+                <div className="relative mb-4 h-52 overflow-hidden rounded-2xl bg-slate-100">
+                  <Image
+                    src={getSafeImage(article.image)}
+                    alt={article.title || "Fact check article image"}
+                    fill
+                    className="object-cover transition duration-500 group-hover:scale-105"
+                  />
+                </div>
 
-              <div className="mb-2 flex items-center justify-between gap-3">
-                <p className="text-xs font-medium uppercase tracking-wide text-amber-700">
-                  Fact Check
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-amber-700">
+                    Fact Check
+                  </p>
+
+                  {article.verdict && (
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                      {article.verdict}
+                    </span>
+                  )}
+                </div>
+
+                <h3 className="text-lg font-semibold leading-7 text-slate-900 group-hover:text-black">
+                  {article.title || "Untitled Fact Check"}
+                </h3>
+
+                <p className="mt-3 text-sm leading-6 text-slate-600 line-clamp-3">
+                  {article.summary ||
+                    article.ourView ||
+                    "Read the full verification report and evidence breakdown."}
                 </p>
 
-                {article.verdict && (
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                    {article.verdict}
-                  </span>
-                )}
-              </div>
+                <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-slate-500">
+                  {article.author && <span>By {article.author}</span>}
 
-              <h3 className="text-lg font-semibold leading-7 text-slate-900 group-hover:text-black">
-                {article.title}
-              </h3>
-
-              <p className="mt-3 text-sm leading-6 text-slate-600 line-clamp-3">
-                {article.summary ||
-                  "Read the full verification report and evidence breakdown."}
-              </p>
-
-              <div className="mt-4 text-sm text-slate-500">
-                {article.author && <span>By {article.author}</span>}
-              </div>
-            </Link>
-          ))}
-        </div>
+                  {formatDate(article.publishedAt || article.createdAt) && (
+                    <span>
+                      • {formatDate(article.publishedAt || article.createdAt)}
+                    </span>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
 
         {/* Empty State */}
         {(!articles || articles.length === 0) && (
@@ -149,7 +218,8 @@ export default async function FactCheckPage() {
             </h3>
 
             <p className="mt-2 text-slate-600">
-              Fact-check investigations will appear here once published.
+              Fact-check investigations will appear here once new reports are
+              published.
             </p>
           </div>
         )}

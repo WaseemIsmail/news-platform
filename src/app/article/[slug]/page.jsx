@@ -1,7 +1,11 @@
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { getArticleBySlug, getArticlesByCategory } from "@/lib/firestore";
+import {
+  getArticleBySlug,
+  getArticlesByCategory,
+  getPollById,
+} from "@/lib/firestore";
 import { generateSEO } from "@/lib/seo";
 
 import ArticleHeader from "@/components/article/ArticleHeader";
@@ -9,6 +13,46 @@ import ArticleMeta from "@/components/article/ArticleMeta";
 import ArticleContent from "@/components/article/ArticleContent";
 import RelatedArticles from "@/components/article/RelatedArticles";
 import ArticleEngagementSection from "@/components/article/ArticleEngagementSection";
+import PollBox from "@/components/polls/PollBox";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+function getSafeImage(image) {
+  if (!image || typeof image !== "string") {
+    return "";
+  }
+
+  const trimmedImage = image.trim();
+
+  if (!trimmedImage) {
+    return "";
+  }
+
+  if (
+    trimmedImage.startsWith("/") ||
+    trimmedImage.startsWith("http://") ||
+    trimmedImage.startsWith("https://")
+  ) {
+    return trimmedImage;
+  }
+
+  return "";
+}
+
+function serializeDate(dateValue) {
+  if (!dateValue) return null;
+
+  try {
+    if (dateValue?.toDate) {
+      return dateValue.toDate().toISOString();
+    }
+
+    return new Date(dateValue).toISOString();
+  } catch {
+    return null;
+  }
+}
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
@@ -35,7 +79,7 @@ export async function generateMetadata({ params }) {
       article.summary ||
       article.ourView ||
       "Read the full article on Contextra.",
-    image: article.image || "/images/default-og.jpg",
+    image: getSafeImage(article.image) || "/images/default-og.jpg",
     url: `https://contextra.netlify.app/article/${article.slug}`,
   });
 }
@@ -54,6 +98,7 @@ export default async function ArticlePage({ params }) {
   }
 
   let relatedArticles = [];
+  let attachedPoll = null;
 
   if (article.category) {
     const categoryArticles = await getArticlesByCategory(article.category);
@@ -63,10 +108,48 @@ export default async function ArticlePage({ params }) {
       .slice(0, 3);
   }
 
+  if (article.pollId) {
+    attachedPoll = await getPollById(article.pollId);
+  }
+
+  const safeArticle = {
+    id: article.id,
+    title: article.title || "",
+    slug: article.slug || "",
+    category: article.category || "",
+    author: article.author || "",
+    summary: article.summary || "",
+    ourView: article.ourView || "",
+    image: getSafeImage(article.image),
+    content: article.content || "",
+    readingTime: article.readingTime || "",
+    views: Number(article.views || 0),
+    tags: Array.isArray(article.tags) ? article.tags : [],
+    featured: Boolean(article.featured),
+    pollId: article.pollId || "",
+    createdAt: serializeDate(article.createdAt),
+    updatedAt: serializeDate(article.updatedAt),
+  };
+
+  const safePoll = attachedPoll
+    ? {
+        id: attachedPoll.id,
+        question: attachedPoll.question || "",
+        status: attachedPoll.status || "",
+        totalVotes: Number(attachedPoll.totalVotes || 0),
+        options: Array.isArray(attachedPoll.options)
+          ? attachedPoll.options.map((option) => ({
+              label: option.label || "",
+              votes: Number(option.votes || 0),
+            }))
+          : [],
+      }
+    : null;
+
   return (
     <main className="bg-white">
       <article className="mx-auto max-w-4xl px-6 py-14">
-        {/* Back */}
+        {/* Back to latest */}
         <div className="mb-8">
           <Link
             href="/latest"
@@ -76,16 +159,18 @@ export default async function ArticlePage({ params }) {
           </Link>
         </div>
 
-        {/* Reusable Article UI */}
+        {/* Header */}
         <ArticleHeader article={article} />
+
+        {/* Meta */}
         <ArticleMeta article={article} />
 
-        {/* Featured Image */}
-        {article.image && (
+        {/* Featured image */}
+        {safeArticle.image && (
           <div className="relative mt-10 h-[420px] overflow-hidden rounded-2xl border border-slate-200">
             <Image
-              src={article.image}
-              alt={article.title}
+              src={safeArticle.image}
+              alt={article.title || "Article image"}
               fill
               priority
               unoptimized
@@ -107,11 +192,16 @@ export default async function ArticlePage({ params }) {
           </section>
         )}
 
-        {/* Content */}
-        <ArticleContent content={article.content} />
+        {/* Full content */}
+        <ArticleContent content={article.content || ""} />
 
-        {/* Interactive Section */}
-        <ArticleEngagementSection article={article} />
+        {/* Attached Poll */}
+        {safePoll && safePoll.status === "active" && (
+          <PollBox poll={safePoll} />
+        )}
+
+        {/* Client Component Section */}
+        <ArticleEngagementSection article={safeArticle} />
 
         {/* Related Articles */}
         <RelatedArticles articles={relatedArticles} />

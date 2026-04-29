@@ -3,6 +3,9 @@ import Image from "next/image";
 import { generateSEO } from "@/lib/seo";
 import { getOpinionArticles } from "@/lib/firestore";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function generateMetadata() {
   return generateSEO({
     title: "Opinion | Contextra",
@@ -13,8 +16,25 @@ export async function generateMetadata() {
   });
 }
 
+function formatDate(dateValue) {
+  if (!dateValue) return "";
+
+  try {
+    if (dateValue?.toDate) {
+      return dateValue.toDate().toLocaleDateString();
+    }
+
+    return new Date(dateValue).toLocaleDateString();
+  } catch {
+    return "";
+  }
+}
+
 export default async function OpinionPage() {
   const articles = await getOpinionArticles();
+
+  const featuredArticle = articles?.[0] || null;
+  const otherArticles = articles?.slice(1) || [];
 
   return (
     <main className="min-h-screen bg-white">
@@ -36,16 +56,13 @@ export default async function OpinionPage() {
         </div>
 
         {/* Featured Section */}
-        {articles?.length > 0 && (
+        {featuredArticle && (
           <div className="mb-14 grid gap-8 lg:grid-cols-2">
-            <Link
-              href={`/article/${articles[0].slug}`}
-              className="group"
-            >
-              <div className="relative h-[320px] overflow-hidden rounded-3xl">
+            <Link href={`/article/${featuredArticle.slug}`} className="group">
+              <div className="relative h-[320px] overflow-hidden rounded-3xl bg-slate-100">
                 <Image
-                  src={articles[0].image || "/images/default-og.jpg"}
-                  alt={articles[0].title}
+                  src={featuredArticle.image || "/images/default-og.jpg"}
+                  alt={featuredArticle.title || "Opinion article image"}
                   fill
                   className="object-cover transition duration-500 group-hover:scale-105"
                   priority
@@ -58,31 +75,31 @@ export default async function OpinionPage() {
                 Featured Opinion
               </p>
 
-              <Link
-                href={`/article/${articles[0].slug}`}
-                className="group"
-              >
+              <Link href={`/article/${featuredArticle.slug}`} className="group">
                 <h2 className="text-3xl font-bold leading-tight text-slate-900 group-hover:text-black">
-                  {articles[0].title}
+                  {featuredArticle.title || "Untitled Opinion"}
                 </h2>
               </Link>
 
               <p className="mt-4 text-base leading-7 text-slate-600">
-                {articles[0].summary ||
+                {featuredArticle.summary ||
+                  featuredArticle.ourView ||
                   "Read the full editorial analysis and understand the broader perspective behind today’s major headlines."}
               </p>
 
-              <div className="mt-6 flex items-center gap-3 text-sm text-slate-500">
-                {articles[0].author && (
-                  <span>By {articles[0].author}</span>
+              <div className="mt-6 flex flex-wrap items-center gap-3 text-sm text-slate-500">
+                {featuredArticle.author && (
+                  <span>By {featuredArticle.author}</span>
                 )}
 
-                {articles[0].publishedAt && (
+                {formatDate(
+                  featuredArticle.publishedAt || featuredArticle.createdAt
+                ) && (
                   <span>
                     •{" "}
-                    {new Date(
-                      articles[0].publishedAt
-                    ).toLocaleDateString()}
+                    {formatDate(
+                      featuredArticle.publishedAt || featuredArticle.createdAt
+                    )}
                   </span>
                 )}
               </div>
@@ -91,41 +108,50 @@ export default async function OpinionPage() {
         )}
 
         {/* Opinion Grid */}
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {articles?.slice(1).map((article) => (
-            <Link
-              key={article.id}
-              href={`/article/${article.slug}`}
-              className="group rounded-3xl border border-slate-200 bg-white p-4 transition hover:shadow-md"
-            >
-              <div className="relative mb-4 h-52 overflow-hidden rounded-2xl">
-                <Image
-                  src={article.image || "/images/default-og.jpg"}
-                  alt={article.title}
-                  fill
-                  className="object-cover transition duration-500 group-hover:scale-105"
-                />
-              </div>
+        {otherArticles.length > 0 && (
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            {otherArticles.map((article) => (
+              <Link
+                key={article.id}
+                href={`/article/${article.slug}`}
+                className="group rounded-3xl border border-slate-200 bg-white p-4 transition hover:shadow-md"
+              >
+                <div className="relative mb-4 h-52 overflow-hidden rounded-2xl bg-slate-100">
+                  <Image
+                    src={article.image || "/images/default-og.jpg"}
+                    alt={article.title || "Opinion article image"}
+                    fill
+                    className="object-cover transition duration-500 group-hover:scale-105"
+                  />
+                </div>
 
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-amber-700">
-                Opinion
-              </p>
+                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-amber-700">
+                  Opinion
+                </p>
 
-              <h3 className="text-lg font-semibold leading-7 text-slate-900 group-hover:text-black">
-                {article.title}
-              </h3>
+                <h3 className="text-lg font-semibold leading-7 text-slate-900 group-hover:text-black">
+                  {article.title || "Untitled Opinion"}
+                </h3>
 
-              <p className="mt-3 text-sm leading-6 text-slate-600 line-clamp-3">
-                {article.summary ||
-                  "Read the full perspective and analysis behind this story."}
-              </p>
+                <p className="mt-3 text-sm leading-6 text-slate-600 line-clamp-3">
+                  {article.summary ||
+                    article.ourView ||
+                    "Read the full perspective and analysis behind this story."}
+                </p>
 
-              <div className="mt-4 text-sm text-slate-500">
-                {article.author && <span>By {article.author}</span>}
-              </div>
-            </Link>
-          ))}
-        </div>
+                <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-slate-500">
+                  {article.author && <span>By {article.author}</span>}
+
+                  {formatDate(article.publishedAt || article.createdAt) && (
+                    <span>
+                      • {formatDate(article.publishedAt || article.createdAt)}
+                    </span>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
 
         {/* Empty State */}
         {(!articles || articles.length === 0) && (
@@ -135,7 +161,8 @@ export default async function OpinionPage() {
             </h3>
 
             <p className="mt-2 text-slate-600">
-              Editorial content will appear here once published.
+              Editorial content will appear here once new opinion articles are
+              published.
             </p>
           </div>
         )}

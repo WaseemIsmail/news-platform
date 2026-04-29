@@ -26,27 +26,46 @@ export default function PollBox({ poll }) {
     if (!poll) return;
 
     const normalizedOptions = Array.isArray(poll.options)
-      ? poll.options.map((option) => {
-          if (typeof option === "string") {
-            return {
-              label: option,
-              votes: 0,
-            };
-          }
-
-          return {
-            label: option.label || "",
-            votes: Number(option.votes || 0),
-          };
-        })
+      ? poll.options.map((option) => ({
+          label: option.label || "",
+          votes: Number(option.votes || 0),
+        }))
       : [];
 
     setOptions(normalizedOptions);
   }, [poll]);
 
   useEffect(() => {
+    const checkUserVote = async () => {
+      try {
+        setCheckingVote(true);
+
+        const auth = getAuth();
+        const user = auth.currentUser;
+
+        if (!pollId || !user?.uid) {
+          setCheckingVote(false);
+          return;
+        }
+
+        const voteRef = doc(db, "polls", pollId, "votes", user.uid);
+        const voteSnapshot = await getDoc(voteRef);
+
+        if (voteSnapshot.exists()) {
+          const voteData = voteSnapshot.data();
+          setVoted(true);
+          setUserVote(voteData);
+          setSelectedOptionIndex(Number(voteData.optionIndex));
+        }
+      } catch (error) {
+        console.error("checkUserVote error:", error);
+        setMessage("Could not check your previous vote.");
+      } finally {
+        setCheckingVote(false);
+      }
+    };
+
     checkUserVote();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pollId]);
 
   const totalVotes = useMemo(() => {
@@ -60,36 +79,6 @@ export default function PollBox({ poll }) {
     ...poll,
     options,
     totalVotes,
-  };
-
-  const checkUserVote = async () => {
-    try {
-      setCheckingVote(true);
-
-      const auth = getAuth();
-      const user = auth.currentUser;
-
-      if (!pollId || !user?.uid) {
-        setCheckingVote(false);
-        return;
-      }
-
-      const voteRef = doc(db, "polls", pollId, "votes", user.uid);
-      const voteSnapshot = await getDoc(voteRef);
-
-      if (voteSnapshot.exists()) {
-        const voteData = voteSnapshot.data();
-
-        setVoted(true);
-        setUserVote(voteData);
-        setSelectedOptionIndex(Number(voteData.optionIndex));
-      }
-    } catch (error) {
-      console.error("checkUserVote error:", error);
-      setMessage("Could not check your previous vote.");
-    } finally {
-      setCheckingVote(false);
-    }
   };
 
   const handleVote = async () => {
@@ -185,8 +174,10 @@ export default function PollBox({ poll }) {
 
         finalOptions = updatedOptions;
         finalVote = {
-          ...votePayload,
-          votedAt: new Date().toISOString(),
+          userId: user.uid,
+          userEmail: user.email || "",
+          optionIndex: selectedOptionIndex,
+          optionLabel: selectedOption.label,
         };
       });
 

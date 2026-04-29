@@ -1,12 +1,16 @@
 import Link from "next/link";
-import { fetchAllArticles } from "@/services/articleService";
-import ArticleCard from "@/components/article/ArticleCard";
-import { generateSEO } from "@/lib/seo";
 import { notFound } from "next/navigation";
+import { getArticlesByCategory } from "@/lib/firestore";
+import { generateSEO } from "@/lib/seo";
+import ArticleCard from "@/components/article/ArticleCard";
 
-function formatCategoryName(slug) {
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+function formatCategoryName(slug = "") {
   return slug
     .split("-")
+    .filter(Boolean)
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
 }
@@ -17,29 +21,30 @@ export async function generateMetadata({ params }) {
 
   return generateSEO({
     title: `${categoryName} News | Contextra`,
-    description: `Explore ${categoryName.toLowerCase()} news, analysis, and discussion on Contextra.`,
-    url: `https://your-domain.com/category/${slug}`,
+    description: `Read the latest ${categoryName.toLowerCase()} articles, analysis, opinions, and public discussions on Contextra.`,
+    image: "/images/default-og.jpg",
+    url: `https://contextra.vercel.app/category/${slug}`,
   });
 }
 
 export default async function CategoryPage({ params }) {
   const { slug } = await params;
-  const categoryName = formatCategoryName(slug);
 
-  const articles = await fetchAllArticles();
-
-  const filteredArticles = articles.filter(
-    (article) =>
-      article.category &&
-      article.category.toLowerCase().replace(/\s+/g, "-") === slug
-  );
-
-  if (!filteredArticles.length) {
+  if (!slug) {
     notFound();
   }
 
+  const categoryName = formatCategoryName(slug);
+
+  const articles = await getArticlesByCategory(slug);
+
+  const publishedArticles = (articles || []).filter(
+    (article) => article.status === "published"
+  );
+
   return (
     <main className="bg-white">
+      {/* Header */}
       <section className="border-b border-slate-200 bg-slate-50">
         <div className="mx-auto max-w-6xl px-6 py-16">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-700">
@@ -51,7 +56,8 @@ export default async function CategoryPage({ params }) {
           </h1>
 
           <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">
-            Explore the latest stories, analysis, and public discussion in {categoryName.toLowerCase()}.
+            Explore the latest articles, analysis, and public discussions under{" "}
+            {categoryName.toLowerCase()}.
           </p>
 
           <div className="mt-6">
@@ -65,19 +71,36 @@ export default async function CategoryPage({ params }) {
         </div>
       </section>
 
+      {/* Article List */}
       <section className="py-16">
         <div className="mx-auto max-w-6xl px-6">
-          <div className="mb-8 flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-slate-900">
-              {filteredArticles.length} Article{filteredArticles.length > 1 ? "s" : ""}
-            </h2>
-          </div>
+          {publishedArticles.length > 0 ? (
+            <>
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold text-slate-900">
+                  {publishedArticles.length} Article
+                  {publishedArticles.length > 1 ? "s" : ""}
+                </h2>
+              </div>
 
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredArticles.map((article) => (
-              <ArticleCard key={article.id} article={article} />
-            ))}
-          </div>
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {publishedArticles.map((article) => (
+                  <ArticleCard key={article.id} article={article} />
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 py-20 text-center">
+              <h3 className="text-xl font-semibold text-slate-800">
+                No Articles Available
+              </h3>
+
+              <p className="mt-2 text-slate-600">
+                Published articles for {categoryName.toLowerCase()} will appear
+                here.
+              </p>
+            </div>
+          )}
         </div>
       </section>
     </main>

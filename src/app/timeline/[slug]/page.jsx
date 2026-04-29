@@ -4,8 +4,33 @@ import { getTimelineBySlug } from "@/lib/firestore";
 import { generateSEO } from "@/lib/seo";
 import formatDate from "@/utils/formatDate";
 
+function normalizeEvents(events) {
+  if (!Array.isArray(events)) return [];
+
+  return events
+    .filter((event) => event && typeof event === "object")
+    .map((event, index) => ({
+      id: event.id || `event-${index}`,
+      title: event.title || "",
+      description: event.description || "",
+      date: event.date || "",
+      type: event.type || "",
+      source: event.source || "",
+    }))
+    .filter((event) => event.title.trim() !== "");
+}
+
+function sortEvents(events) {
+  return [...events].sort((a, b) => {
+    const aTime = a.date ? new Date(a.date).getTime() : Number.MAX_SAFE_INTEGER;
+    const bTime = b.date ? new Date(b.date).getTime() : Number.MAX_SAFE_INTEGER;
+
+    return aTime - bTime;
+  });
+}
+
 export async function generateMetadata({ params }) {
-  const { slug } = params;
+  const { slug } = await params;
   const timeline = await getTimelineBySlug(slug);
 
   if (!timeline) {
@@ -26,16 +51,14 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function TimelinePage({ params }) {
-  const { slug } = params;
+  const { slug } = await params;
   const timeline = await getTimelineBySlug(slug);
 
   if (!timeline) {
     notFound();
   }
 
-  const events = Array.isArray(timeline.events)
-    ? [...timeline.events].sort((a, b) => new Date(a.date) - new Date(b.date))
-    : [];
+  const events = sortEvents(normalizeEvents(timeline.events));
 
   return (
     <main className="bg-white">

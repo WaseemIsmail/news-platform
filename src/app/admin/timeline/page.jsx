@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   addDoc,
@@ -21,6 +22,17 @@ export default function AdminTimelinePage() {
   const [summary, setSummary] = useState("");
   const [category, setCategory] = useState("");
   const [status, setStatus] = useState("published");
+  const [coverImage, setCoverImage] = useState("");
+
+  const [events, setEvents] = useState([
+    {
+      title: "",
+      date: "",
+      type: "",
+      description: "",
+      source: "",
+    },
+  ]);
 
   const [editingId, setEditingId] = useState(null);
 
@@ -34,17 +46,20 @@ export default function AdminTimelinePage() {
     fetchTimelines();
   }, []);
 
-  const generateSlug = (value) => {
+  const generateSlug = (value = "") => {
     return value
+      .toString()
       .toLowerCase()
       .trim()
       .replace(/[^\w\s-]/g, "")
-      .replace(/\s+/g, "-");
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-");
   };
 
   const fetchTimelines = async () => {
     try {
       setLoading(true);
+      setError("");
 
       const snapshot = await getDocs(collection(db, "timelines"));
 
@@ -52,6 +67,12 @@ export default function AdminTimelinePage() {
         id: item.id,
         ...item.data(),
       }));
+
+      data.sort((a, b) => {
+        const aDate = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(0);
+        const bDate = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(0);
+        return bDate - aDate;
+      });
 
       setTimelines(data);
     } catch (error) {
@@ -68,9 +89,76 @@ export default function AdminTimelinePage() {
     setSummary("");
     setCategory("");
     setStatus("published");
+    setCoverImage("");
+    setEvents([
+      {
+        title: "",
+        date: "",
+        type: "",
+        description: "",
+        source: "",
+      },
+    ]);
     setEditingId(null);
     setError("");
     setSuccess("");
+  };
+
+  const handleEventChange = (index, field, value) => {
+    setEvents((prev) =>
+      prev.map((event, eventIndex) =>
+        eventIndex === index
+          ? {
+              ...event,
+              [field]: value,
+            }
+          : event
+      )
+    );
+  };
+
+  const addEvent = () => {
+    setEvents((prev) => [
+      ...prev,
+      {
+        title: "",
+        date: "",
+        type: "",
+        description: "",
+        source: "",
+      },
+    ]);
+  };
+
+  const removeEvent = (index) => {
+    setEvents((prev) => {
+      if (prev.length === 1) {
+        return [
+          {
+            title: "",
+            date: "",
+            type: "",
+            description: "",
+            source: "",
+          },
+        ];
+      }
+
+      return prev.filter((_, eventIndex) => eventIndex !== index);
+    });
+  };
+
+  const cleanEvents = () => {
+    return events
+      .map((event, index) => ({
+        id: event.id || `event-${index + 1}`,
+        title: event.title.trim(),
+        date: event.date,
+        type: event.type.trim(),
+        description: event.description.trim(),
+        source: event.source.trim(),
+      }))
+      .filter((event) => event.title);
   };
 
   const handleSubmit = async (e) => {
@@ -89,17 +177,29 @@ export default function AdminTimelinePage() {
       return;
     }
 
-    const finalSlug = slug.trim()
-      ? generateSlug(slug)
-      : generateSlug(title);
+    const finalSlug = slug.trim() ? generateSlug(slug) : generateSlug(title);
+
+    if (!finalSlug) {
+      setError("Valid slug is required.");
+      return;
+    }
+
+    const finalEvents = cleanEvents();
+
+    if (finalEvents.length === 0) {
+      setError("Please add at least one timeline event.");
+      return;
+    }
 
     try {
       const payload = {
         title: title.trim(),
         slug: finalSlug,
         summary: summary.trim(),
-        category: category.trim(),
+        category: category.trim() || "General",
         status,
+        coverImage: coverImage.trim(),
+        events: finalEvents,
         updatedAt: serverTimestamp(),
       };
 
@@ -129,8 +229,32 @@ export default function AdminTimelinePage() {
     setSummary(timeline.summary || "");
     setCategory(timeline.category || "");
     setStatus(timeline.status || "published");
-    setEditingId(timeline.id);
+    setCoverImage(timeline.coverImage || "");
 
+    if (Array.isArray(timeline.events) && timeline.events.length > 0) {
+      setEvents(
+        timeline.events.map((event, index) => ({
+          id: event.id || `event-${index + 1}`,
+          title: event.title || "",
+          date: event.date || "",
+          type: event.type || "",
+          description: event.description || "",
+          source: event.source || "",
+        }))
+      );
+    } else {
+      setEvents([
+        {
+          title: "",
+          date: "",
+          type: "",
+          description: "",
+          source: "",
+        },
+      ]);
+    }
+
+    setEditingId(timeline.id);
     setError("");
     setSuccess("");
 
@@ -186,9 +310,9 @@ export default function AdminTimelinePage() {
           </h1>
 
           <p className="mt-3 max-w-3xl text-slate-600">
-            Create, update, and organize timeline stories for major
-            events, political developments, investigations, and
-            historical breakdowns across Contextra.
+            Create, update, and organize timeline stories with chronological
+            events for investigations, major news developments, and historical
+            breakdowns.
           </p>
         </div>
 
@@ -210,7 +334,7 @@ export default function AdminTimelinePage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+          <form onSubmit={handleSubmit} className="mt-6 space-y-6">
             {/* Timeline Title */}
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-700">
@@ -242,9 +366,13 @@ export default function AdminTimelinePage() {
                 type="text"
                 placeholder="auto-generated-slug"
                 value={slug}
-                onChange={(e) => setSlug(e.target.value)}
+                onChange={(e) => setSlug(generateSlug(e.target.value))}
                 className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
               />
+
+              <p className="mt-2 text-xs text-slate-500">
+                Public URL will be: /timeline/{slug || "your-slug"}
+              </p>
             </div>
 
             {/* Summary */}
@@ -293,6 +421,156 @@ export default function AdminTimelinePage() {
                   <option value="draft">Draft</option>
                   <option value="archived">Archived</option>
                 </select>
+              </div>
+            </div>
+
+            {/* Cover Image */}
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-700">
+                Cover Image URL
+              </label>
+
+              <input
+                type="text"
+                placeholder="/images/default-og.jpg or https://example.com/image.jpg"
+                value={coverImage}
+                onChange={(e) => setCoverImage(e.target.value)}
+                className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
+              />
+
+              <p className="mt-2 text-xs text-slate-500">
+                Leave empty to use default image on public pages.
+              </p>
+            </div>
+
+            {/* Timeline Events */}
+            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+              <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900">
+                    Timeline Events
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Add events in chronological order. The public page will sort
+                    them by date.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={addEvent}
+                  className="rounded-2xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+                >
+                  Add Event
+                </button>
+              </div>
+
+              <div className="space-y-5">
+                {events.map((event, index) => (
+                  <div
+                    key={index}
+                    className="rounded-2xl border border-slate-200 bg-white p-5"
+                  >
+                    <div className="mb-4 flex items-center justify-between gap-3">
+                      <h4 className="font-semibold text-slate-900">
+                        Event {index + 1}
+                      </h4>
+
+                      <button
+                        type="button"
+                        onClick={() => removeEvent(index)}
+                        className="rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100"
+                      >
+                        Remove
+                      </button>
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <label className="mb-2 block text-sm font-medium text-slate-700">
+                          Event Title
+                        </label>
+
+                        <input
+                          type="text"
+                          placeholder="Enter event title"
+                          value={event.title}
+                          onChange={(e) =>
+                            handleEventChange(index, "title", e.target.value)
+                          }
+                          className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-2 block text-sm font-medium text-slate-700">
+                          Event Date
+                        </label>
+
+                        <input
+                          type="date"
+                          value={event.date}
+                          onChange={(e) =>
+                            handleEventChange(index, "date", e.target.value)
+                          }
+                          className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-2 block text-sm font-medium text-slate-700">
+                          Event Type
+                        </label>
+
+                        <input
+                          type="text"
+                          placeholder="announcement, update, conflict, decision..."
+                          value={event.type}
+                          onChange={(e) =>
+                            handleEventChange(index, "type", e.target.value)
+                          }
+                          className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-2 block text-sm font-medium text-slate-700">
+                          Source
+                        </label>
+
+                        <input
+                          type="text"
+                          placeholder="Source name or link"
+                          value={event.source}
+                          onChange={(e) =>
+                            handleEventChange(index, "source", e.target.value)
+                          }
+                          className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
+                        />
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="mb-2 block text-sm font-medium text-slate-700">
+                          Event Description
+                        </label>
+
+                        <textarea
+                          rows={4}
+                          placeholder="Describe what happened in this event"
+                          value={event.description}
+                          onChange={(e) =>
+                            handleEventChange(
+                              index,
+                              "description",
+                              e.target.value
+                            )
+                          }
+                          className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -348,6 +626,10 @@ export default function AdminTimelinePage() {
                     </th>
 
                     <th className="px-6 py-4 text-sm font-semibold text-slate-700">
+                      Events
+                    </th>
+
+                    <th className="px-6 py-4 text-sm font-semibold text-slate-700">
                       Status
                     </th>
 
@@ -377,9 +659,15 @@ export default function AdminTimelinePage() {
                         {timeline.category || "General"}
                       </td>
 
+                      <td className="px-6 py-5 text-slate-600">
+                        {Array.isArray(timeline.events)
+                          ? timeline.events.length
+                          : 0}
+                      </td>
+
                       <td className="px-6 py-5">
                         <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium capitalize text-slate-700">
-                          {timeline.status}
+                          {timeline.status || "published"}
                         </span>
                       </td>
 
@@ -391,6 +679,16 @@ export default function AdminTimelinePage() {
                           >
                             Edit
                           </button>
+
+                          {timeline.slug && (
+                            <Link
+                              href={`/timeline/${timeline.slug}`}
+                              target="_blank"
+                              className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+                            >
+                              View
+                            </Link>
+                          )}
 
                           <button
                             onClick={() => openDeleteModal(timeline)}

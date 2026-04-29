@@ -2,8 +2,10 @@ import CommentItem from "./CommentItem";
 
 export default function CommentList({
   comments = [],
+  user = null,
   onReply,
   onDelete,
+  onLike,
 }) {
   if (!comments.length) {
     return (
@@ -32,8 +34,10 @@ export default function CommentList({
           <CommentItem
             key={comment.id}
             comment={comment}
+            user={user}
             onReply={onReply}
             onDelete={onDelete}
+            onLike={onLike}
           />
         ))}
       </div>

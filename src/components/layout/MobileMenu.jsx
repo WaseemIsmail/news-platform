@@ -3,37 +3,76 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
+import { signOut } from "firebase/auth";
+
+import { useAuthContext } from "@/context/AuthContext";
+import { auth } from "@/lib/firebase";
 
 export default function MobileMenu({ isOpen, onClose }) {
   const pathname = usePathname();
+  const { user, isAdmin, isEditor } = useAuthContext();
 
   const navigationLinks = [
     { label: "Home", href: "/" },
     { label: "Latest", href: "/latest" },
-    { label: "Trending", href: "/trending" },
     { label: "Opinion", href: "/opinion" },
     { label: "Fact Check", href: "/fact-check" },
     { label: "Timeline", href: "/timeline" },
-    { label: "Newsletter", href: "/newsletter" },
+    { label: "Search", href: "/search" },
   ];
 
-  const secondaryLinks = [
-    { label: "Bookmarks", href: "/bookmarks" },
-    { label: "Profile", href: "/profile" },
-    { label: "Notifications", href: "/notifications" },
-    { label: "Settings", href: "/settings" },
+  const categoryLinks = [
+    { label: "Politics", href: "/category/politics" },
+    { label: "Business", href: "/category/business" },
+    { label: "Economy", href: "/category/economy" },
+    { label: "Technology", href: "/category/technology" },
+    { label: "World", href: "/category/world" },
+    { label: "Sports", href: "/sports" },
   ];
 
-  const isActive = (href) => pathname === href;
+  const adminLinks = [
+    { label: "Admin Dashboard", href: "/admin" },
+    { label: "Manage Articles", href: "/admin/articles" },
+    { label: "Manage Polls", href: "/admin/polls" },
+    { label: "Manage Timelines", href: "/admin/timeline" },
+  ];
 
-  /* Close menu when route changes */
+  const isActive = (href) => {
+    if (href === "/") return pathname === "/";
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
+
+  const getDisplayName = () => {
+    return (
+      user?.displayName ||
+      user?.fullName ||
+      user?.name ||
+      (user?.email ? user.email.split("@")[0] : "Contextra Reader")
+    );
+  };
+
+  const getUserRoleLabel = () => {
+    if (isAdmin) return "Administrator";
+    if (isEditor) return "Editor";
+    return "Reader";
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      onClose();
+      window.location.href = "/";
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
       onClose();
     }
   }, [pathname]);
 
-  /* Prevent body scroll when menu is open */
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -46,7 +85,6 @@ export default function MobileMenu({ isOpen, onClose }) {
     };
   }, [isOpen]);
 
-  /* ESC key support */
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === "Escape") {
@@ -86,6 +124,7 @@ export default function MobileMenu({ isOpen, onClose }) {
           </Link>
 
           <button
+            type="button"
             onClick={onClose}
             aria-label="Close menu"
             className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
@@ -96,6 +135,25 @@ export default function MobileMenu({ isOpen, onClose }) {
 
         {/* Navigation */}
         <div className="flex-1 overflow-y-auto px-6 py-6">
+          {/* User Info */}
+          {user && (
+            <div className="mb-8 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-sm font-semibold text-slate-900">
+                {getDisplayName()}
+              </p>
+
+              {user?.email && (
+                <p className="mt-1 break-all text-xs text-slate-500">
+                  {user.email}
+                </p>
+              )}
+
+              <span className="mt-3 inline-flex rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700">
+                {getUserRoleLabel()}
+              </span>
+            </div>
+          )}
+
           {/* Main Navigation */}
           <div>
             <p className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">
@@ -120,14 +178,14 @@ export default function MobileMenu({ isOpen, onClose }) {
             </nav>
           </div>
 
-          {/* Secondary Links */}
+          {/* Categories */}
           <div className="mt-10">
             <p className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-              Account
+              Categories
             </p>
 
             <nav className="space-y-2">
-              {secondaryLinks.map((item) => (
+              {categoryLinks.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
@@ -141,8 +199,86 @@ export default function MobileMenu({ isOpen, onClose }) {
                   {item.label}
                 </Link>
               ))}
+
+              <Link
+                href="/tag"
+                onClick={onClose}
+                className={`block rounded-2xl px-4 py-3 text-sm font-semibold transition ${
+                  isActive("/tag")
+                    ? "bg-amber-100 text-amber-800"
+                    : "text-amber-700 hover:bg-amber-50"
+                }`}
+              >
+                Browse All Tags →
+              </Link>
             </nav>
           </div>
+
+          {/* Auth Links */}
+          {!user && (
+            <div className="mt-10">
+              <p className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                Account
+              </p>
+
+              <nav className="space-y-2">
+                <Link
+                  href="/login"
+                  onClick={onClose}
+                  className="block rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                >
+                  Login
+                </Link>
+
+                <Link
+                  href="/signup"
+                  onClick={onClose}
+                  className="block rounded-2xl bg-slate-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-slate-800"
+                >
+                  Sign Up
+                </Link>
+              </nav>
+            </div>
+          )}
+
+          {/* Admin / Editor Links */}
+          {user && (isAdmin || isEditor) && (
+            <div className="mt-10">
+              <p className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                Management
+              </p>
+
+              <nav className="space-y-2">
+                {adminLinks.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={onClose}
+                    className={`block rounded-2xl px-4 py-3 text-sm font-medium transition ${
+                      isActive(item.href)
+                        ? "bg-slate-100 text-slate-900"
+                        : "text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </nav>
+            </div>
+          )}
+
+          {/* Logout */}
+          {user && (
+            <div className="mt-10">
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="w-full rounded-2xl bg-red-50 px-4 py-3 text-left text-sm font-medium text-red-600 transition hover:bg-red-100"
+              >
+                Logout
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Footer */}

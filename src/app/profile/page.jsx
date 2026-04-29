@@ -3,11 +3,32 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { auth } from "@/lib/firebase";
-import { onAuthStateChanged, signOut } from "firebase/auth";
+import {
+  onAuthStateChanged,
+  signOut,
+} from "firebase/auth";
+
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+} from "firebase/firestore";
+
+import { db } from "@/lib/firebase";
 
 export default function ProfilePage() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const [savedArticlesCount, setSavedArticlesCount] =
+    useState(0);
+
+  const [commentsCount, setCommentsCount] =
+    useState(0);
+
+  const [reactionsCount, setReactionsCount] =
+    useState(0);
 
   const handleLogout = async () => {
     try {
@@ -18,11 +39,72 @@ export default function ProfilePage() {
     }
   };
 
+  const fetchUserStats = async (currentUser) => {
+    try {
+      /*
+        BOOKMARKS FROM LOCALSTORAGE
+      */
+      const savedBookmarks = JSON.parse(
+        localStorage.getItem("bookmarkedArticles") || "[]"
+      );
+
+      setSavedArticlesCount(savedBookmarks.length);
+
+      /*
+        COMMENTS COUNT
+      */
+      const commentsRef = collection(db, "comments");
+
+      const commentsQuery = query(
+        commentsRef,
+        where("userId", "==", currentUser.uid)
+      );
+
+      const commentsSnapshot = await getDocs(
+        commentsQuery
+      );
+
+      setCommentsCount(commentsSnapshot.size);
+
+      /*
+        REACTIONS COUNT
+      */
+      const reactionsRef = collection(
+        db,
+        "reactions"
+      );
+
+      const reactionsQuery = query(
+        reactionsRef,
+        where("userId", "==", currentUser.uid)
+      );
+
+      const reactionsSnapshot = await getDocs(
+        reactionsQuery
+      );
+
+      setReactionsCount(reactionsSnapshot.size);
+    } catch (error) {
+      console.error(
+        "Failed to fetch profile stats:",
+        error
+      );
+    }
+  };
+
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setLoading(false);
-    });
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      async (currentUser) => {
+        setUser(currentUser);
+
+        if (currentUser) {
+          await fetchUserStats(currentUser);
+        }
+
+        setLoading(false);
+      }
+    );
 
     return () => unsubscribe();
   }, []);
@@ -31,7 +113,9 @@ export default function ProfilePage() {
     return (
       <main className="bg-white min-h-screen">
         <div className="mx-auto max-w-5xl px-6 py-20 text-center">
-          <p className="text-slate-600">Loading profile...</p>
+          <p className="text-slate-600">
+            Loading profile...
+          </p>
         </div>
       </main>
     );
@@ -74,7 +158,8 @@ export default function ProfilePage() {
           </h1>
 
           <p className="mt-4 text-slate-600">
-            Manage your account, saved articles, and activity.
+            Manage your account, saved articles,
+            and activity.
           </p>
         </div>
       </section>
@@ -88,13 +173,18 @@ export default function ProfilePage() {
               <div className="flex items-center gap-5">
                 <div className="flex h-20 w-20 items-center justify-center rounded-full bg-amber-100 text-2xl font-bold text-amber-700">
                   {user.displayName
-                    ? user.displayName.charAt(0).toUpperCase()
-                    : user.email.charAt(0).toUpperCase()}
+                    ? user.displayName
+                        .charAt(0)
+                        .toUpperCase()
+                    : user.email
+                        .charAt(0)
+                        .toUpperCase()}
                 </div>
 
                 <div>
                   <h2 className="text-2xl font-semibold text-slate-900">
-                    {user.displayName || "Contextra Reader"}
+                    {user.displayName ||
+                      "Contextra Reader"}
                   </h2>
 
                   <p className="mt-2 text-sm text-slate-600">
@@ -131,23 +221,32 @@ export default function ProfilePage() {
             {/* Stats */}
             <div className="mt-10 grid gap-6 md:grid-cols-3">
               <div className="rounded-xl border border-slate-200 p-5">
-                <p className="text-sm text-slate-500">Saved Articles</p>
+                <p className="text-sm text-slate-500">
+                  Saved Articles
+                </p>
+
                 <h3 className="mt-2 text-2xl font-bold text-slate-900">
-                  0
+                  {savedArticlesCount}
                 </h3>
               </div>
 
               <div className="rounded-xl border border-slate-200 p-5">
-                <p className="text-sm text-slate-500">Comments Posted</p>
+                <p className="text-sm text-slate-500">
+                  Comments Posted
+                </p>
+
                 <h3 className="mt-2 text-2xl font-bold text-slate-900">
-                  0
+                  {commentsCount}
                 </h3>
               </div>
 
               <div className="rounded-xl border border-slate-200 p-5">
-                <p className="text-sm text-slate-500">Reactions Given</p>
+                <p className="text-sm text-slate-500">
+                  Reactions Given
+                </p>
+
                 <h3 className="mt-2 text-2xl font-bold text-slate-900">
-                  0
+                  {reactionsCount}
                 </h3>
               </div>
             </div>

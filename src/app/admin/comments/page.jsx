@@ -285,7 +285,7 @@ export default function AdminCommentsPage() {
                     >
                       <td className="px-6 py-5">
                         <p className="max-w-xl text-sm leading-6 text-slate-700">
-                          {comment.content || "No comment content"}
+                          {comment.comment || "No comment content"}
                         </p>
                       </td>
 

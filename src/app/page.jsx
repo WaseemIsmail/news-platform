@@ -1,5 +1,9 @@
 import Link from "next/link";
 import { generateSEO } from "@/lib/seo";
+import { getHomepageArticles } from "@/lib/firestore";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export const metadata = generateSEO({
   title: "Contextra | Through Context, Not Just Headlines",
@@ -8,36 +12,6 @@ export const metadata = generateSEO({
   image: "/images/default-og.jpg",
   url: "https://contextra.vercel.app",
 });
-
-const articles = [
-  {
-    id: 1,
-    title: "Fuel Price Increase in Sri Lanka",
-    slug: "fuel-price-increase-sri-lanka",
-    category: "Economy",
-    summary:
-      "Fuel prices continue to rise, affecting transport and daily life across the country.",
-    date: "April 20, 2026",
-  },
-  {
-    id: 2,
-    title: "Why Global Wars Affect Economies",
-    slug: "global-wars-economy",
-    category: "World",
-    summary:
-      "Conflicts create ripple effects across inflation, oil prices, and global supply chains.",
-    date: "April 18, 2026",
-  },
-  {
-    id: 3,
-    title: "AI Is Changing Jobs Faster",
-    slug: "ai-changing-jobs",
-    category: "Technology",
-    summary:
-      "Automation and AI are reshaping industries faster than many expected.",
-    date: "April 15, 2026",
-  },
-];
 
 const quickLinks = [
   {
@@ -57,7 +31,23 @@ const quickLinks = [
   },
 ];
 
-export default function HomePage() {
+function formatDate(dateValue) {
+  if (!dateValue) return "Recently";
+
+  try {
+    if (dateValue?.toDate) {
+      return dateValue.toDate().toLocaleDateString();
+    }
+
+    return new Date(dateValue).toLocaleDateString();
+  } catch {
+    return "Recently";
+  }
+}
+
+export default async function HomePage() {
+  const articles = await getHomepageArticles();
+
   return (
     <main className="bg-white">
       {/* HERO SECTION */}
@@ -72,8 +62,8 @@ export default function HomePage() {
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-600">
-            Contextra helps you understand current events through
-            historical context, deeper analysis, and real public discussion.
+            Contextra helps you understand current events through historical
+            context, deeper analysis, and real public discussion.
           </p>
 
           <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
@@ -97,11 +87,12 @@ export default function HomePage() {
       {/* TOP STORIES */}
       <section className="py-16">
         <div className="mx-auto max-w-6xl px-6">
-          <div className="mb-8 flex items-center justify-between">
+          <div className="mb-8 flex items-center justify-between gap-4">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-700">
                 Top Stories
               </p>
+
               <h2 className="mt-2 text-3xl font-bold text-slate-900">
                 Most Discussed Today
               </h2>
@@ -115,39 +106,54 @@ export default function HomePage() {
             </Link>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {articles.map((article) => (
-              <div
-                key={article.id}
-                className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md"
-              >
-                <span className="inline-block rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800">
-                  {article.category}
-                </span>
-
-                <h3 className="mt-4 text-xl font-semibold leading-8 text-slate-900">
-                  {article.title}
-                </h3>
-
-                <p className="mt-3 text-sm leading-7 text-slate-600">
-                  {article.summary}
-                </p>
-
-                <div className="mt-6 flex items-center justify-between">
-                  <span className="text-sm text-slate-400">
-                    {article.date}
+          {articles.length > 0 ? (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {articles.map((article) => (
+                <div
+                  key={article.id}
+                  className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md"
+                >
+                  <span className="inline-block rounded-full bg-amber-100 px-3 py-1 text-xs font-medium capitalize text-amber-800">
+                    {article.category || "General"}
                   </span>
 
-                  <Link
-                    href={`/article/${article.slug}`}
-                    className="text-sm font-semibold text-slate-900 hover:text-amber-700"
-                  >
-                    Read More →
-                  </Link>
+                  <h3 className="mt-4 text-xl font-semibold leading-8 text-slate-900">
+                    {article.title || "Untitled Article"}
+                  </h3>
+
+                  <p className="mt-3 text-sm leading-7 text-slate-600">
+                    {article.summary ||
+                      article.ourView ||
+                      "Read the full story with deeper context and analysis."}
+                  </p>
+
+                  <div className="mt-6 flex items-center justify-between gap-4">
+                    <span className="text-sm text-slate-400">
+                      {formatDate(article.publishedAt || article.createdAt)}
+                    </span>
+
+                    <Link
+                      href={`/article/${article.slug}`}
+                      className="text-sm font-semibold text-slate-900 hover:text-amber-700"
+                    >
+                      Read More →
+                    </Link>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 py-16 text-center">
+              <h3 className="text-xl font-semibold text-slate-800">
+                No Top Stories Selected
+              </h3>
+
+              <p className="mt-2 text-slate-600">
+                Selected homepage articles will appear here once added from the
+                admin dashboard.
+              </p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -164,8 +170,8 @@ export default function HomePage() {
             </h2>
 
             <p className="mx-auto mt-4 max-w-2xl text-slate-600">
-              Go beyond daily headlines with opinion pieces, fact checks,
-              and timeline-based storytelling.
+              Go beyond daily headlines with opinion pieces, fact checks, and
+              timeline-based storytelling.
             </p>
           </div>
 

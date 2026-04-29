@@ -4,7 +4,7 @@ export default function Footer() {
   return (
     <footer className="border-t border-gray-200 bg-white">
       <div className="mx-auto max-w-7xl px-6 py-12">
-        <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-3">
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
           {/* Brand */}
           <div>
             <Link
@@ -16,35 +16,68 @@ export default function Footer() {
 
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-gray-600">
               Understand current events with historical context, deeper
-              analysis, and real public discussion.
+              analysis, fact checks, timelines, and real public discussion.
             </p>
           </div>
 
-          {/* Quick Links */}
+          {/* Explore */}
           <div>
             <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-900">
-              Quick Links
+              Explore
             </h3>
 
-            <ul
-              className="mt-4 space-y-2 text-sm text-gray-600"
-              aria-label="Quick links"
-            >
-              <li>
-                <Link href="/" className="transition hover:text-black">
-                  Home
-                </Link>
-              </li>
-              <li>
-                <Link href="/trending" className="transition hover:text-black">
-                  Trending
-                </Link>
-              </li>
+            <ul className="mt-4 space-y-2 text-sm text-gray-600">
               <li>
                 <Link href="/latest" className="transition hover:text-black">
-                  Latest
+                  Latest Articles
                 </Link>
               </li>
+
+              <li>
+                <Link href="/opinion" className="transition hover:text-black">
+                  Opinion
+                </Link>
+              </li>
+
+              <li>
+                <Link href="/sports" className="transition hover:text-black">
+                  Sports
+                </Link>
+              </li>
+
+              <li>
+                <Link href="/fact-check" className="transition hover:text-black">
+                  Fact Check
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Discover */}
+          <div>
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-900">
+              Discover
+            </h3>
+
+            <ul className="mt-4 space-y-2 text-sm text-gray-600">
+              <li>
+                <Link href="/timeline" className="transition hover:text-black">
+                  Timelines
+                </Link>
+              </li>
+
+              <li>
+                <Link href="/tag" className="transition hover:text-black">
+                  Tags
+                </Link>
+              </li>
+
+              <li>
+                <Link href="/search" className="transition hover:text-black">
+                  Search
+                </Link>
+              </li>
+
               <li>
                 <Link href="/about" className="transition hover:text-black">
                   About
@@ -59,20 +92,19 @@ export default function Footer() {
               Legal
             </h3>
 
-            <ul
-              className="mt-4 space-y-2 text-sm text-gray-600"
-              aria-label="Legal links"
-            >
+            <ul className="mt-4 space-y-2 text-sm text-gray-600">
               <li>
                 <Link href="/privacy" className="transition hover:text-black">
                   Privacy Policy
                 </Link>
               </li>
+
               <li>
                 <Link href="/terms" className="transition hover:text-black">
                   Terms & Conditions
                 </Link>
               </li>
+
               <li>
                 <Link href="/contact" className="transition hover:text-black">
                   Contact

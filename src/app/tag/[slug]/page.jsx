@@ -4,15 +4,22 @@ import { fetchAllArticles } from "@/services/articleService";
 import ArticleCard from "@/components/article/ArticleCard";
 import { generateSEO } from "@/lib/seo";
 
-function formatTagName(slug) {
+function formatTagName(slug = "") {
   return slug
     .split("-")
+    .filter(Boolean)
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
 }
 
 function normalizeText(text = "") {
-  return text.toLowerCase().replace(/\s+/g, "-").trim();
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
 }
 
 export async function generateMetadata({ params }) {
@@ -22,22 +29,28 @@ export async function generateMetadata({ params }) {
   return generateSEO({
     title: `${tagName} Articles | Contextra`,
     description: `Explore articles, insights, and discussions related to ${tagName.toLowerCase()} on Contextra.`,
-    url: `https://your-domain.com/tag/${slug}`,
+    image: "/images/default-og.jpg",
+    url: `https://contextra.vercel.app/tag/${slug}`,
   });
 }
 
 export default async function TagPage({ params }) {
   const { slug } = await params;
+
+  if (!slug) {
+    notFound();
+  }
+
   const tagName = formatTagName(slug);
+  const normalizedSlug = normalizeText(slug);
 
   const articles = await fetchAllArticles();
 
-  const filteredArticles = articles.filter((article) => {
-    if (!article.tags || !Array.isArray(article.tags)) return false;
+  const filteredArticles = (articles || []).filter((article) => {
+    if (article.status !== "published") return false;
+    if (!Array.isArray(article.tags)) return false;
 
-    return article.tags.some(
-      (tag) => normalizeText(tag) === slug
-    );
+    return article.tags.some((tag) => normalizeText(tag) === normalizedSlug);
   });
 
   if (!filteredArticles.length) {
@@ -57,15 +70,16 @@ export default async function TagPage({ params }) {
           </h1>
 
           <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">
-            Explore all articles and discussions connected to {tagName.toLowerCase()}.
+            Explore all published articles and discussions connected to{" "}
+            {tagName.toLowerCase()}.
           </p>
 
           <div className="mt-6">
             <Link
-              href="/"
+              href="/tag"
               className="text-sm font-medium text-slate-700 transition hover:text-slate-900 hover:underline"
             >
-              ← Back to Home
+              ← Back to Tags
             </Link>
           </div>
         </div>
