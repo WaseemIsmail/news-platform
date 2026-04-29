@@ -360,14 +360,14 @@ export default function Navbar() {
             )}
 
             {/* Mobile Menu Button */}
-            <button
-              type="button"
-              onClick={() => setMobileOpen(true)}
-              className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 text-xl md:hidden"
-              aria-label="Open mobile menu"
-            >
-              ☰
-            </button>
+<button
+  type="button"
+  onClick={() => setMobileOpen(true)}
+  className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 bg-white text-2xl font-bold text-slate-900 transition hover:bg-slate-50 md:hidden"
+  aria-label="Open mobile menu"
+>
+  ☰
+</button>
           </div>
         </div>
       </header>
