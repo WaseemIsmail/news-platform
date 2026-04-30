@@ -44,10 +44,7 @@ export default function Navbar() {
   };
 
   const isCategoryActive = () => {
-    return (
-      pathname.startsWith("/category") ||
-      pathname.startsWith("/sports")
-    );
+    return pathname.startsWith("/category") || pathname.startsWith("/sports");
   };
 
   const getDisplayName = () => {
@@ -161,9 +158,7 @@ export default function Navbar() {
                 }`}
               >
                 Categories
-                <span className="text-xs">
-                  {categoriesOpen ? "▲" : "▼"}
-                </span>
+                <span className="text-xs">{categoriesOpen ? "▲" : "▼"}</span>
 
                 {isCategoryActive() && (
                   <span className="absolute -bottom-2 left-0 h-0.5 w-full rounded-full bg-amber-600" />
@@ -287,6 +282,14 @@ export default function Navbar() {
                     {/* Reader Links */}
                     <div className="mt-4 space-y-2">
                       <Link
+                        href="/profile"
+                        onClick={closeProfileDropdown}
+                        className="block rounded-lg px-3 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50"
+                      >
+                        My Profile
+                      </Link>
+
+                      <Link
                         href="/latest"
                         onClick={closeProfileDropdown}
                         className="block rounded-lg px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-50"
@@ -360,22 +363,19 @@ export default function Navbar() {
             )}
 
             {/* Mobile Menu Button */}
-<button
-  type="button"
-  onClick={() => setMobileOpen(true)}
-  className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 bg-white text-2xl font-bold text-slate-900 transition hover:bg-slate-50 md:hidden"
-  aria-label="Open mobile menu"
->
-  ☰
-</button>
+            <button
+              type="button"
+              onClick={() => setMobileOpen(true)}
+              className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 bg-white text-2xl font-bold text-slate-900 transition hover:bg-slate-50 md:hidden"
+              aria-label="Open mobile menu"
+            >
+              ☰
+            </button>
           </div>
         </div>
       </header>
 
-      <MobileMenu
-        isOpen={mobileOpen}
-        onClose={() => setMobileOpen(false)}
-      />
+      <MobileMenu isOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
     </>
   );
 }

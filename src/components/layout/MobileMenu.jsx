@@ -30,6 +30,12 @@ export default function MobileMenu({ isOpen, onClose }) {
     { label: "Sports", href: "/sports" },
   ];
 
+  const userLinks = [
+    { label: "My Profile", href: "/profile" },
+    { label: "Saved Articles", href: "/bookmarks" },
+    { label: "Notifications", href: "/notifications" },
+  ];
+
   const adminLinks = [
     { label: "Admin Dashboard", href: "/admin" },
     { label: "Manage Articles", href: "/admin/articles" },
@@ -49,6 +55,11 @@ export default function MobileMenu({ isOpen, onClose }) {
       user?.name ||
       (user?.email ? user.email.split("@")[0] : "Contextra Reader")
     );
+  };
+
+  const getUserInitial = () => {
+    const name = getDisplayName();
+    return name ? name.charAt(0).toUpperCase() : "C";
   };
 
   const getUserRoleLabel = () => {
@@ -138,17 +149,25 @@ export default function MobileMenu({ isOpen, onClose }) {
           {/* User Info */}
           {user && (
             <div className="mb-8 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-sm font-semibold text-slate-900">
-                {getDisplayName()}
-              </p>
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">
+                  {getUserInitial()}
+                </div>
 
-              {user?.email && (
-                <p className="mt-1 break-all text-xs text-slate-500">
-                  {user.email}
-                </p>
-              )}
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">
+                    {getDisplayName()}
+                  </p>
 
-              <span className="mt-3 inline-flex rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700">
+                  {user?.email && (
+                    <p className="mt-1 break-all text-xs text-slate-500">
+                      {user.email}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <span className="mt-4 inline-flex rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700">
                 {getUserRoleLabel()}
               </span>
             </div>
@@ -213,6 +232,32 @@ export default function MobileMenu({ isOpen, onClose }) {
               </Link>
             </nav>
           </div>
+
+          {/* User Links */}
+          {user && (
+            <div className="mt-10">
+              <p className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                My Account
+              </p>
+
+              <nav className="space-y-2">
+                {userLinks.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={onClose}
+                    className={`block rounded-2xl px-4 py-3 text-sm font-medium transition ${
+                      isActive(item.href)
+                        ? "bg-slate-100 text-slate-900"
+                        : "text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </nav>
+            </div>
+          )}
 
           {/* Auth Links */}
           {!user && (
