@@ -30,11 +30,16 @@ function formatDate(dateValue) {
   }
 }
 
+function hasArticleImage(article) {
+  return Boolean(article?.image && article.image.trim() !== "");
+}
+
 export default async function OpinionPage() {
   const articles = await getOpinionArticles();
 
   const featuredArticle = articles?.[0] || null;
   const otherArticles = articles?.slice(1) || [];
+  const featuredHasImage = hasArticleImage(featuredArticle);
 
   return (
     <main className="min-h-screen bg-white">
@@ -57,31 +62,43 @@ export default async function OpinionPage() {
 
         {/* Featured Section */}
         {featuredArticle && (
-          <div className="mb-14 grid gap-8 lg:grid-cols-2">
-            <Link href={`/article/${featuredArticle.slug}`} className="group">
-              <div className="relative h-[320px] overflow-hidden rounded-3xl bg-slate-100">
-                <Image
-                  src={featuredArticle.image || "/images/default-og.jpg"}
-                  alt={featuredArticle.title || "Opinion article image"}
-                  fill
-                  className="object-cover transition duration-500 group-hover:scale-105"
-                  priority
-                />
-              </div>
-            </Link>
+          <div
+            className={`mb-14 grid gap-8 ${
+              featuredHasImage ? "lg:grid-cols-2" : "lg:grid-cols-1"
+            }`}
+          >
+            {featuredHasImage && (
+              <Link href={`/article/${featuredArticle.slug}`} className="group">
+                <div className="relative h-[320px] overflow-hidden rounded-3xl bg-slate-100">
+                  <Image
+                    src={featuredArticle.image}
+                    alt={featuredArticle.title || "Opinion article image"}
+                    fill
+                    className="object-cover transition duration-500 group-hover:scale-105"
+                    priority
+                  />
+                </div>
+              </Link>
+            )}
 
-            <div className="flex flex-col justify-center">
+            <div
+              className={`flex flex-col justify-center ${
+                !featuredHasImage
+                  ? "rounded-3xl border border-slate-200 bg-slate-50 p-8 md:p-10"
+                  : ""
+              }`}
+            >
               <p className="mb-2 text-sm font-medium text-amber-700">
                 Featured Opinion
               </p>
 
               <Link href={`/article/${featuredArticle.slug}`} className="group">
-                <h2 className="text-3xl font-bold leading-tight text-slate-900 group-hover:text-black">
+                <h2 className="text-3xl font-bold leading-tight text-slate-900 group-hover:text-black md:text-4xl">
                   {featuredArticle.title || "Untitled Opinion"}
                 </h2>
               </Link>
 
-              <p className="mt-4 text-base leading-7 text-slate-600">
+              <p className="mt-4 max-w-3xl text-base leading-7 text-slate-600">
                 {featuredArticle.summary ||
                   featuredArticle.ourView ||
                   "Read the full editorial analysis and understand the broader perspective behind today’s major headlines."}
@@ -110,46 +127,54 @@ export default async function OpinionPage() {
         {/* Opinion Grid */}
         {otherArticles.length > 0 && (
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {otherArticles.map((article) => (
-              <Link
-                key={article.id}
-                href={`/article/${article.slug}`}
-                className="group rounded-3xl border border-slate-200 bg-white p-4 transition hover:shadow-md"
-              >
-                <div className="relative mb-4 h-52 overflow-hidden rounded-2xl bg-slate-100">
-                  <Image
-                    src={article.image || "/images/default-og.jpg"}
-                    alt={article.title || "Opinion article image"}
-                    fill
-                    className="object-cover transition duration-500 group-hover:scale-105"
-                  />
-                </div>
+            {otherArticles.map((article) => {
+              const articleHasImage = hasArticleImage(article);
 
-                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-amber-700">
-                  Opinion
-                </p>
-
-                <h3 className="text-lg font-semibold leading-7 text-slate-900 group-hover:text-black">
-                  {article.title || "Untitled Opinion"}
-                </h3>
-
-                <p className="mt-3 text-sm leading-6 text-slate-600 line-clamp-3">
-                  {article.summary ||
-                    article.ourView ||
-                    "Read the full perspective and analysis behind this story."}
-                </p>
-
-                <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-slate-500">
-                  {article.author && <span>By {article.author}</span>}
-
-                  {formatDate(article.publishedAt || article.createdAt) && (
-                    <span>
-                      • {formatDate(article.publishedAt || article.createdAt)}
-                    </span>
+              return (
+                <Link
+                  key={article.id}
+                  href={`/article/${article.slug}`}
+                  className={`group rounded-3xl border border-slate-200 bg-white p-4 transition hover:shadow-md ${
+                    !articleHasImage ? "flex min-h-[280px] flex-col" : ""
+                  }`}
+                >
+                  {articleHasImage && (
+                    <div className="relative mb-4 h-52 overflow-hidden rounded-2xl bg-slate-100">
+                      <Image
+                        src={article.image}
+                        alt={article.title || "Opinion article image"}
+                        fill
+                        className="object-cover transition duration-500 group-hover:scale-105"
+                      />
+                    </div>
                   )}
-                </div>
-              </Link>
-            ))}
+
+                  <p className="mb-2 text-xs font-medium uppercase tracking-wide text-amber-700">
+                    Opinion
+                  </p>
+
+                  <h3 className="text-lg font-semibold leading-7 text-slate-900 group-hover:text-black">
+                    {article.title || "Untitled Opinion"}
+                  </h3>
+
+                  <p className="mt-3 text-sm leading-6 text-slate-600 line-clamp-4">
+                    {article.summary ||
+                      article.ourView ||
+                      "Read the full perspective and analysis behind this story."}
+                  </p>
+
+                  <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-slate-500">
+                    {article.author && <span>By {article.author}</span>}
+
+                    {formatDate(article.publishedAt || article.createdAt) && (
+                      <span>
+                        • {formatDate(article.publishedAt || article.createdAt)}
+                      </span>
+                    )}
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         )}
 

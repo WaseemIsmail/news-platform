@@ -29,6 +29,7 @@ export default function NewArticlePage() {
     content: "",
     ourView: "",
     category: "opinion",
+    useImage: false,
     image: "",
     author: "Contextra Editorial",
     featured: false,
@@ -84,10 +85,22 @@ export default function NewArticlePage() {
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+    setFormData((prev) => {
+      const nextValue = type === "checkbox" ? checked : value;
+
+      if (name === "useImage" && !checked) {
+        return {
+          ...prev,
+          useImage: false,
+          image: "",
+        };
+      }
+
+      return {
+        ...prev,
+        [name]: nextValue,
+      };
+    });
   };
 
   const resetForm = () => {
@@ -97,6 +110,7 @@ export default function NewArticlePage() {
       content: "",
       ourView: "",
       category: "opinion",
+      useImage: false,
       image: "",
       author: "Contextra Editorial",
       featured: false,
@@ -129,6 +143,11 @@ export default function NewArticlePage() {
       return;
     }
 
+    if (formData.useImage && !formData.image.trim()) {
+      setError("Image URL is required when Add article image is enabled.");
+      return;
+    }
+
     if (formData.showOnHomepage) {
       const orderNumber = Number(formData.homepageOrder);
 
@@ -147,7 +166,10 @@ export default function NewArticlePage() {
         content: formData.content.trim(),
         ourView: formData.ourView.trim(),
         category: formData.category,
-        image: formData.image.trim(),
+
+        // Image is saved only if checkbox is enabled
+        image: formData.useImage ? formData.image.trim() : "",
+
         author: formData.author.trim() || "Contextra Editorial",
         featured: formData.featured,
         status: formData.status,
@@ -390,25 +412,52 @@ export default function NewArticlePage() {
             </p>
           </div>
 
-          {/* Image URL */}
+          {/* Add Image Checkbox */}
           <div className="md:col-span-2">
             <label className="mb-2 block text-sm font-medium text-slate-800">
-              Image URL
+              Article Image
             </label>
 
-            <input
-              type="text"
-              name="image"
-              value={formData.image}
-              onChange={handleChange}
-              placeholder="Paste article image URL"
-              className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
-            />
+            <label className="flex min-h-[46px] items-center gap-3 rounded-lg border border-slate-300 px-4 py-3 text-sm font-medium text-slate-700">
+              <input
+                type="checkbox"
+                name="useImage"
+                checked={formData.useImage}
+                onChange={handleChange}
+                className="h-4 w-4 rounded border-slate-300"
+              />
+              Add image for this article
+            </label>
 
             <p className="mt-2 text-xs text-slate-500">
-              Leave empty to use the default article image.
+              Keep this unticked if you do not want to add an image. The article
+              will be saved without an image URL.
             </p>
           </div>
+
+          {/* Image URL */}
+          {formData.useImage && (
+            <div className="md:col-span-2">
+              <label className="mb-2 block text-sm font-medium text-slate-800">
+                Image URL
+              </label>
+
+              <input
+                type="text"
+                name="image"
+                value={formData.image}
+                onChange={handleChange}
+                placeholder="Paste your own image URL"
+                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
+              />
+
+              <p className="mt-2 text-xs text-slate-500">
+                Use only your own image, generated image, Canva image, or a
+                properly licensed stock image. Do not paste image URLs copied
+                from news websites.
+              </p>
+            </div>
+          )}
 
           {/* Our View */}
           <div className="md:col-span-2">
@@ -421,7 +470,7 @@ export default function NewArticlePage() {
               value={formData.ourView}
               onChange={handleChange}
               rows={5}
-              placeholder="Write Contextra's editorial view"
+              placeholder="Write the article impact analysis or editorial view"
               className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
             />
           </div>
@@ -484,7 +533,7 @@ export default function NewArticlePage() {
             disabled={loading}
             className="rounded-lg bg-slate-900 px-6 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {loading ? "Publishing..." : "Publish Article"}
+            {loading ? "Saving..." : "Save Article"}
           </button>
 
           <button
