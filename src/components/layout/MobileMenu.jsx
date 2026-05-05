@@ -27,7 +27,7 @@ export default function MobileMenu({ isOpen, onClose }) {
     { label: "Economy", href: "/category/economy" },
     { label: "Technology", href: "/category/technology" },
     { label: "World", href: "/category/world" },
-    { label: "Sports", href: "/sports" },
+    { label: "Sports", href: "/category/sports" },
   ];
 
   const userLinks = [

@@ -1,8 +1,7 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { getArticlesByCategory } from "@/lib/firestore";
 import { generateSEO } from "@/lib/seo";
-import ArticleCard from "@/components/article/ArticleCard";
+import formatDate from "@/utils/formatDate";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -10,97 +9,177 @@ export const revalidate = 0;
 function formatCategoryName(slug = "") {
   return slug
     .split("-")
-    .filter(Boolean)
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
 }
 
+function getValidPublishedArticles(articles = []) {
+  return articles.filter((article) => {
+    const hasTitle = article?.title && article.title.trim() !== "";
+    const hasSlug = article?.slug && article.slug.trim() !== "";
+    const isPublished = article?.status === "published";
+
+    return hasTitle && hasSlug && isPublished;
+  });
+}
+
 export async function generateMetadata({ params }) {
-  const { slug } = await params;
+  const resolvedParams = await params;
+  const slug = resolvedParams?.slug || "";
+
   const categoryName = formatCategoryName(slug);
 
   return generateSEO({
-    title: `${categoryName} News | Contextra`,
-    description: `Read the latest ${categoryName.toLowerCase()} articles, analysis, opinions, and public discussions on Contextra.`,
+    title: `${categoryName || "Category"} News | Contextra`,
+    description: `Explore the latest ${
+      categoryName || "category"
+    } news, analysis, and stories on Contextra.`,
     image: "/images/default-og.jpg",
     url: `https://contextra.vercel.app/category/${slug}`,
   });
 }
 
 export default async function CategoryPage({ params }) {
-  const { slug } = await params;
-
-  if (!slug) {
-    notFound();
-  }
+  const resolvedParams = await params;
+  const slug = resolvedParams?.slug || "";
 
   const categoryName = formatCategoryName(slug);
 
+  // Important: Your Firestore category is saved as slug values like:
+  // politics, business, economy, technology, world, fact-check
   const articles = await getArticlesByCategory(slug);
 
-  const publishedArticles = (articles || []).filter(
-    (article) => article.status === "published"
-  );
+  const validArticles = getValidPublishedArticles(articles);
 
   return (
     <main className="bg-white">
-      {/* Header */}
+      {/* Hero */}
       <section className="border-b border-slate-200 bg-slate-50">
-        <div className="mx-auto max-w-6xl px-6 py-16">
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-700">
-            Category
-          </p>
-
-          <h1 className="mt-3 text-4xl font-bold text-slate-900 md:text-5xl">
-            {categoryName}
-          </h1>
-
-          <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">
-            Explore the latest articles, analysis, and public discussions under{" "}
-            {categoryName.toLowerCase()}.
-          </p>
-
-          <div className="mt-6">
+        <div className="mx-auto max-w-6xl px-6 py-14">
+          <div className="mb-6">
             <Link
               href="/"
-              className="text-sm font-medium text-slate-700 transition hover:text-slate-900 hover:underline"
+              className="text-sm font-medium text-amber-700 hover:underline"
             >
               ← Back to Home
             </Link>
           </div>
+
+          <span className="inline-block rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800">
+            Category
+          </span>
+
+          <h1 className="mt-5 text-4xl font-bold text-slate-900 md:text-5xl">
+            {categoryName}
+          </h1>
+
+          <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-600">
+            Explore the latest reporting, analysis, and editorial coverage in{" "}
+            {categoryName}.
+          </p>
+
+          <div className="mt-6 text-sm text-slate-500">
+            {validArticles.length} article
+            {validArticles.length !== 1 ? "s" : ""}
+          </div>
         </div>
       </section>
 
-      {/* Article List */}
-      <section className="py-16">
+      {/* Articles Grid */}
+      <section className="py-14">
         <div className="mx-auto max-w-6xl px-6">
-          {publishedArticles.length > 0 ? (
-            <>
-              <div className="mb-8">
-                <h2 className="text-2xl font-bold text-slate-900">
-                  {publishedArticles.length} Article
-                  {publishedArticles.length > 1 ? "s" : ""}
-                </h2>
-              </div>
+          {validArticles.length === 0 ? (
+            <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+              <h2 className="text-xl font-semibold text-slate-900">
+                No articles found
+              </h2>
 
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {publishedArticles.map((article) => (
-                  <ArticleCard key={article.id} article={article} />
-                ))}
-              </div>
-            </>
-          ) : (
-            <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 py-20 text-center">
-              <h3 className="text-xl font-semibold text-slate-800">
-                No Articles Available
-              </h3>
-
-              <p className="mt-2 text-slate-600">
-                Published articles for {categoryName.toLowerCase()} will appear
-                here.
+              <p className="mt-3 text-slate-600">
+                Published articles for this category will appear here.
               </p>
+
+              <Link
+                href="/latest"
+                className="mt-6 inline-flex rounded-lg bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+              >
+                View Latest Articles
+              </Link>
+            </div>
+          ) : (
+            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+              {validArticles.map((article) => (
+                <article
+                  key={article.id}
+                  className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                      {article.category || slug}
+                    </span>
+
+                    <span className="text-sm text-slate-400">
+                      {article.createdAt
+                        ? formatDate(article.createdAt)
+                        : "Recently"}
+                    </span>
+                  </div>
+
+                  <h2 className="mt-5 text-xl font-bold leading-8 text-slate-900">
+                    {article.title}
+                  </h2>
+
+                  {(article.summary || article.ourView) && (
+                    <p className="mt-4 line-clamp-4 text-sm leading-7 text-slate-600">
+                      {article.summary || article.ourView}
+                    </p>
+                  )}
+
+                  <div className="mt-6 flex items-center justify-between gap-4">
+                    <span className="text-sm text-slate-500">
+                      {article.author || "Contextra Editorial"}
+                    </span>
+
+                    <Link
+                      href={`/article/${article.slug}`}
+                      className="text-sm font-semibold text-slate-900 hover:text-amber-700"
+                    >
+                      Read More →
+                    </Link>
+                  </div>
+                </article>
+              ))}
             </div>
           )}
+
+          {/* Continue Exploring */}
+          <section className="mt-16 border-t border-slate-200 pt-8">
+            <h2 className="text-xl font-semibold text-slate-900">
+              Continue Exploring
+            </h2>
+
+            <div className="mt-5 flex flex-wrap gap-3">
+              <Link
+                href="/latest"
+                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50"
+              >
+                Latest Articles
+              </Link>
+
+              <Link
+                href="/opinion"
+                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50"
+              >
+                Opinion
+              </Link>
+
+              <Link
+                href="/timeline"
+                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50"
+              >
+                Explore Timelines
+              </Link>
+            </div>
+          </section>
         </div>
       </section>
     </main>

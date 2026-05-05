@@ -3,6 +3,9 @@ import { fetchAllArticles } from "@/services/articleService";
 import ArticleCard from "@/components/article/ArticleCard";
 import { generateSEO } from "@/lib/seo";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export const metadata = generateSEO({
   title: "Latest News | Contextra",
   description:
@@ -10,17 +13,47 @@ export const metadata = generateSEO({
   url: "https://your-domain.com/latest",
 });
 
+function getArticleDateValue(article) {
+  if (article?.publishedAt?.seconds) {
+    return article.publishedAt.seconds;
+  }
+
+  if (article?.createdAt?.seconds) {
+    return article.createdAt.seconds;
+  }
+
+  if (article?.updatedAt?.seconds) {
+    return article.updatedAt.seconds;
+  }
+
+  return 0;
+}
+
+function getValidPublishedArticles(articles = []) {
+  return articles.filter((article) => {
+    const hasTitle = article?.title && article.title.trim() !== "";
+    const hasSlug = article?.slug && article.slug.trim() !== "";
+    const isPublished = article?.status === "published";
+
+    return hasTitle && hasSlug && isPublished;
+  });
+}
+
 function sortLatestArticles(articles = []) {
   return [...articles].sort((a, b) => {
-    const dateA = a.createdAt?.seconds || 0;
-    const dateB = b.createdAt?.seconds || 0;
+    const dateA = getArticleDateValue(a);
+    const dateB = getArticleDateValue(b);
+
     return dateB - dateA;
   });
 }
 
 export default async function LatestPage() {
   const articles = await fetchAllArticles();
-  const latestArticles = sortLatestArticles(articles);
+
+  const latestArticles = sortLatestArticles(
+    getValidPublishedArticles(articles)
+  );
 
   return (
     <main className="bg-white">
@@ -35,7 +68,8 @@ export default async function LatestPage() {
           </h1>
 
           <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">
-            Stay updated with the newest stories, current events, and deeper perspectives.
+            Stay updated with the newest stories, current events, and deeper
+            perspectives.
           </p>
 
           <div className="mt-6">
@@ -56,6 +90,7 @@ export default async function LatestPage() {
               <h2 className="text-xl font-semibold text-slate-900">
                 No articles published yet
               </h2>
+
               <p className="mt-3 text-slate-600">
                 Start publishing articles to see them here.
               </p>
@@ -63,10 +98,7 @@ export default async function LatestPage() {
           ) : (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {latestArticles.map((article) => (
-                <ArticleCard
-                  key={article.id}
-                  article={article}
-                />
+                <ArticleCard key={article.id} article={article} />
               ))}
             </div>
           )}
