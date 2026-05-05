@@ -15,6 +15,7 @@ const ARTICLE_CATEGORIES = [
   { label: "Technology", value: "technology" },
   { label: "World", value: "world" },
   { label: "Fact Check", value: "fact-check" },
+  { label: "Education", value: "education" },
 ];
 
 const normalizeCategory = (category = "") => {

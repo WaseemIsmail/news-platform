@@ -36,6 +36,7 @@ export default function Navbar() {
     { label: "Technology", href: "/category/technology" },
     { label: "World", href: "/category/world" },
     { label: "Sports", href: "/category/sports" },
+    { label: "Education", href: "/category/education" },
   ];
 
   const isActive = (href) => {
