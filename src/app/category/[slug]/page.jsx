@@ -13,14 +13,77 @@ function formatCategoryName(slug = "") {
     .join(" ");
 }
 
-function getValidPublishedArticles(articles = []) {
-  return articles.filter((article) => {
-    const hasTitle = article?.title && article.title.trim() !== "";
-    const hasSlug = article?.slug && article.slug.trim() !== "";
-    const isPublished = article?.status === "published";
+function isPublishedArticle(article) {
+  return article?.status?.toString().trim().toLowerCase() === "published";
+}
 
-    return hasTitle && hasSlug && isPublished;
-  });
+function getArticleDate(article) {
+  if (article?.publishedAt?.toDate) {
+    return article.publishedAt.toDate();
+  }
+
+  if (article?.createdAt?.toDate) {
+    return article.createdAt.toDate();
+  }
+
+  if (article?.updatedAt?.toDate) {
+    return article.updatedAt.toDate();
+  }
+
+  if (article?.publishedAt?.seconds) {
+    return new Date(article.publishedAt.seconds * 1000);
+  }
+
+  if (article?.createdAt?.seconds) {
+    return new Date(article.createdAt.seconds * 1000);
+  }
+
+  if (article?.updatedAt?.seconds) {
+    return new Date(article.updatedAt.seconds * 1000);
+  }
+
+  if (article?.publishedAt) {
+    const date = new Date(article.publishedAt);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  if (article?.createdAt) {
+    const date = new Date(article.createdAt);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  if (article?.updatedAt) {
+    const date = new Date(article.updatedAt);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  return null;
+}
+
+function getArticleDateValue(article) {
+  const date = getArticleDate(article);
+
+  if (!date || Number.isNaN(date.getTime())) {
+    return 0;
+  }
+
+  return date.getTime();
+}
+
+function getDisplayDate(article) {
+  return article?.publishedAt || article?.createdAt || article?.updatedAt || null;
+}
+
+function getValidPublishedArticles(articles = []) {
+  return articles
+    .filter((article) => {
+      const hasTitle = article?.title?.toString().trim() !== "";
+      const hasSlug = article?.slug?.toString().trim() !== "";
+      const isPublished = isPublishedArticle(article);
+
+      return hasTitle && hasSlug && isPublished;
+    })
+    .sort((a, b) => getArticleDateValue(b) - getArticleDateValue(a));
 }
 
 export async function generateMetadata({ params }) {
@@ -45,15 +108,11 @@ export default async function CategoryPage({ params }) {
 
   const categoryName = formatCategoryName(slug);
 
-  // Important: Your Firestore category is saved as slug values like:
-  // politics, business, economy, technology, world, fact-check
   const articles = await getArticlesByCategory(slug);
-
   const validArticles = getValidPublishedArticles(articles);
 
   return (
     <main className="bg-white">
-      {/* Hero */}
       <section className="border-b border-slate-200 bg-slate-50">
         <div className="mx-auto max-w-6xl px-6 py-14">
           <div className="mb-6">
@@ -79,19 +138,18 @@ export default async function CategoryPage({ params }) {
           </p>
 
           <div className="mt-6 text-sm text-slate-500">
-            {validArticles.length} article
+            {validArticles.length} published article
             {validArticles.length !== 1 ? "s" : ""}
           </div>
         </div>
       </section>
 
-      {/* Articles Grid */}
       <section className="py-14">
         <div className="mx-auto max-w-6xl px-6">
           {validArticles.length === 0 ? (
             <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
               <h2 className="text-xl font-semibold text-slate-900">
-                No articles found
+                No published articles found
               </h2>
 
               <p className="mt-3 text-slate-600">
@@ -107,51 +165,52 @@ export default async function CategoryPage({ params }) {
             </div>
           ) : (
             <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-              {validArticles.map((article) => (
-                <article
-                  key={article.id}
-                  className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                      {article.category || slug}
-                    </span>
+              {validArticles.map((article) => {
+                const displayDate = getDisplayDate(article);
 
-                    <span className="text-sm text-slate-400">
-                      {article.createdAt
-                        ? formatDate(article.createdAt)
-                        : "Recently"}
-                    </span>
-                  </div>
+                return (
+                  <article
+                    key={article.id}
+                    className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                        {article.category || slug}
+                      </span>
 
-                  <h2 className="mt-5 text-xl font-bold leading-8 text-slate-900">
-                    {article.title}
-                  </h2>
+                      <span className="text-sm text-slate-400">
+                        {displayDate ? formatDate(displayDate) : "Recently"}
+                      </span>
+                    </div>
 
-                  {(article.summary || article.ourView) && (
-                    <p className="mt-4 line-clamp-4 text-sm leading-7 text-slate-600">
-                      {article.summary || article.ourView}
-                    </p>
-                  )}
+                    <h2 className="mt-5 text-xl font-bold leading-8 text-slate-900">
+                      {article.title}
+                    </h2>
 
-                  <div className="mt-6 flex items-center justify-between gap-4">
-                    <span className="text-sm text-slate-500">
-                      {article.author || "Contextra Editorial"}
-                    </span>
+                    {(article.summary || article.ourView) && (
+                      <p className="mt-4 line-clamp-4 text-sm leading-7 text-slate-600">
+                        {article.summary || article.ourView}
+                      </p>
+                    )}
 
-                    <Link
-                      href={`/article/${article.slug}`}
-                      className="text-sm font-semibold text-slate-900 hover:text-amber-700"
-                    >
-                      Read More →
-                    </Link>
-                  </div>
-                </article>
-              ))}
+                    <div className="mt-6 flex items-center justify-between gap-4">
+                      <span className="text-sm text-slate-500">
+                        {article.author || "Contextra Editorial"}
+                      </span>
+
+                      <Link
+                        href={`/article/${article.slug}`}
+                        className="text-sm font-semibold text-slate-900 hover:text-amber-700"
+                      >
+                        Read More →
+                      </Link>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           )}
 
-          {/* Continue Exploring */}
           <section className="mt-16 border-t border-slate-200 pt-8">
             <h2 className="text-xl font-semibold text-slate-900">
               Continue Exploring
