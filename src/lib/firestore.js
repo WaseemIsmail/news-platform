@@ -66,6 +66,24 @@ const getArticleOrderField = () => {
   return "createdAt";
 };
 
+const sortByCreatedAtDesc = (items = []) => {
+  return [...items].sort((a, b) => {
+    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+
+    return dateB - dateA;
+  });
+};
+
+const sortByCreatedAtAsc = (items = []) => {
+  return [...items].sort((a, b) => {
+    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+
+    return dateA - dateB;
+  });
+};
+
 /* =========================
    Articles
 ========================= */
@@ -90,23 +108,71 @@ export const createArticleDoc = async (data) => {
   });
 };
 
+/*
+  CHANGED:
+  Public pages should not read articles directly by ID unless the article is published.
+  If admin/editor pages need draft access by ID, use admin rules/page logic separately.
+*/
 export const getArticleById = async (id) => {
-  const ref = doc(db, "articles", id);
-  const snapshot = await getDoc(ref);
+  try {
+    const ref = doc(db, "articles", id);
+    const snapshot = await getDoc(ref);
 
-  if (!snapshot.exists()) return null;
+    if (!snapshot.exists()) return null;
 
-  return mapDoc(snapshot);
+    const article = mapDoc(snapshot);
+
+    if (article.status !== "published") {
+      return null;
+    }
+
+    return article;
+  } catch (error) {
+    console.error("getArticleById error:", error);
+    return null;
+  }
 };
 
+/*
+  CHANGED:
+  This now returns only published articles.
+  This fixes public pages like Latest, Opinion, Fact Check, etc.
+  Firestore rules allow public users to read published articles only.
+*/
 export const getAllArticles = async () => {
   try {
-    const q = query(articlesCollection, orderBy(getArticleOrderField(), "desc"));
+    const q = query(
+      articlesCollection,
+      where("status", "==", "published"),
+      orderBy(getArticleOrderField(), "desc")
+    );
+
     const snapshot = await getDocs(q);
 
     return snapshot.docs.map(mapDoc);
   } catch (error) {
     console.error("getAllArticles error:", error);
+    return [];
+  }
+};
+
+/*
+  ADDED:
+  Use this only for admin pages if you need all articles including drafts.
+  This requires the logged-in user to be admin/editor based on Firestore rules.
+*/
+export const getAllArticlesForAdmin = async () => {
+  try {
+    const q = query(
+      articlesCollection,
+      orderBy(getArticleOrderField(), "desc")
+    );
+
+    const snapshot = await getDocs(q);
+
+    return snapshot.docs.map(mapDoc);
+  } catch (error) {
+    console.error("getAllArticlesForAdmin error:", error);
     return [];
   }
 };
@@ -135,6 +201,7 @@ export const getArticleBySlug = async (slug) => {
     const q = query(
       articlesCollection,
       where("slug", "==", normalizedSlug),
+      where("status", "==", "published"),
       limit(1)
     );
 
@@ -151,18 +218,17 @@ export const getArticleBySlug = async (slug) => {
 
 export const getArticlesByCategory = async (category) => {
   try {
+    const normalizedCategory = normalizeCategory(category);
+
     const q = query(
       articlesCollection,
-      where("category", "==", category),
+      where("category", "==", normalizedCategory),
       where("status", "==", "published")
     );
 
     const snapshot = await getDocs(q);
 
-    return snapshot.docs.map((item) => ({
-      id: item.id,
-      ...item.data(),
-    }));
+    return sortByCreatedAtDesc(snapshot.docs.map(mapDoc));
   } catch (error) {
     console.error("getArticlesByCategory error:", error);
     return [];
@@ -179,10 +245,7 @@ export const getHomepageArticles = async () => {
 
     const snapshot = await getDocs(q);
 
-    const articles = snapshot.docs.map((item) => ({
-      id: item.id,
-      ...item.data(),
-    }));
+    const articles = snapshot.docs.map(mapDoc);
 
     return articles
       .sort((a, b) => (a.homepageOrder || 999) - (b.homepageOrder || 999))
@@ -207,10 +270,7 @@ export const getOpinionArticles = async () => {
 
     const snapshot = await getDocs(q);
 
-    return snapshot.docs.map((item) => ({
-      id: item.id,
-      ...item.data(),
-    }));
+    return sortByCreatedAtDesc(snapshot.docs.map(mapDoc));
   } catch (error) {
     console.error("getOpinionArticles error:", error);
     return [];
@@ -227,10 +287,7 @@ export const getSportsArticles = async () => {
 
     const snapshot = await getDocs(q);
 
-    return snapshot.docs.map((item) => ({
-      id: item.id,
-      ...item.data(),
-    }));
+    return sortByCreatedAtDesc(snapshot.docs.map(mapDoc));
   } catch (error) {
     console.error("getSportsArticles error:", error);
     return [];
@@ -247,10 +304,7 @@ export const getFactCheckArticles = async () => {
 
     const snapshot = await getDocs(q);
 
-    return snapshot.docs.map((item) => ({
-      id: item.id,
-      ...item.data(),
-    }));
+    return sortByCreatedAtDesc(snapshot.docs.map(mapDoc));
   } catch (error) {
     console.error("getFactCheckArticles error:", error);
     return [];
@@ -346,12 +400,9 @@ export const tagsCollection = collection(db, "tags");
 
 export const getAllTags = async () => {
   try {
-    const snapshot = await getDocs(collection(db, "tags"));
+    const snapshot = await getDocs(tagsCollection);
 
-    return snapshot.docs.map((item) => ({
-      id: item.id,
-      ...item.data(),
-    }));
+    return snapshot.docs.map(mapDoc);
   } catch (error) {
     console.error("getAllTags error:", error);
     return [];
@@ -365,13 +416,12 @@ export const getArticlesByTag = async (tagSlug) => {
     const q = query(
       articlesCollection,
       where("tags", "array-contains", normalizedTag),
-      where("status", "==", "published"),
-      orderBy(getArticleOrderField(), "desc")
+      where("status", "==", "published")
     );
 
     const snapshot = await getDocs(q);
 
-    return snapshot.docs.map(mapDoc);
+    return sortByCreatedAtDesc(snapshot.docs.map(mapDoc));
   } catch (error) {
     console.error("getArticlesByTag error:", error);
     return [];
@@ -408,14 +458,14 @@ export const getTimelineBySlug = async (slug) => {
 
 export const getAllTimelines = async () => {
   try {
-    const snapshot = await getDocs(timelinesCollection);
+    const q = query(
+      timelinesCollection,
+      where("status", "==", "published")
+    );
 
-    return snapshot.docs
-      .map((item) => ({
-        id: item.id,
-        ...item.data(),
-      }))
-      .filter((timeline) => timeline.status === "published");
+    const snapshot = await getDocs(q);
+
+    return sortByCreatedAtDesc(snapshot.docs.map(mapDoc));
   } catch (error) {
     console.error("getAllTimelines error:", error);
     return [];
@@ -445,6 +495,8 @@ export const createCommentDoc = async (data) => {
     likes: data.likes || 0,
     likedUsers: data.likedUsers || [],
 
+    // If you want comments to appear immediately, keep approved.
+    // If you want moderation first, change to pending and update UI/rules.
     status: data.status || "approved",
 
     createdAt: serverTimestamp(),
@@ -452,44 +504,54 @@ export const createCommentDoc = async (data) => {
   });
 };
 
+/*
+  CHANGED:
+  Removed orderBy("createdAt", "asc") to avoid Firestore composite index error.
+  We sort in JavaScript instead.
+*/
 export const getCommentsByArticleId = async (articleId) => {
   try {
     const q = query(
       commentsCollection,
       where("articleId", "==", articleId),
-      orderBy("createdAt", "asc")
+      where("status", "==", "approved")
     );
 
     const snapshot = await getDocs(q);
 
-    return snapshot.docs
-      .map(mapDoc)
-      .filter((comment) => comment.status !== "rejected");
+    return sortByCreatedAtAsc(snapshot.docs.map(mapDoc));
   } catch (error) {
     console.error("getCommentsByArticleId error:", error);
     return [];
   }
 };
 
+/*
+  CHANGED:
+  Removed orderBy("createdAt", "asc") to avoid Firestore composite index error.
+  We sort in JavaScript instead.
+*/
 export const getRepliesByParentId = async (parentId) => {
   try {
     const q = query(
       commentsCollection,
       where("parentId", "==", parentId),
-      orderBy("createdAt", "asc")
+      where("status", "==", "approved")
     );
 
     const snapshot = await getDocs(q);
 
-    return snapshot.docs
-      .map(mapDoc)
-      .filter((reply) => reply.status !== "rejected");
+    return sortByCreatedAtAsc(snapshot.docs.map(mapDoc));
   } catch (error) {
     console.error("getRepliesByParentId error:", error);
     return [];
   }
 };
 
+/*
+  Admin only.
+  Requires admin/editor Firestore rule if used from admin panel.
+*/
 export const getAllComments = async () => {
   try {
     const q = query(commentsCollection, orderBy("createdAt", "desc"));
@@ -631,16 +693,13 @@ export const getPollById = async (id) => {
 export const getActivePolls = async () => {
   try {
     const q = query(
-      collection(db, "polls"),
+      pollsCollection,
       where("status", "==", "active")
     );
 
     const snapshot = await getDocs(q);
 
-    return snapshot.docs.map((item) => ({
-      id: item.id,
-      ...item.data(),
-    }));
+    return snapshot.docs.map(mapDoc);
   } catch (error) {
     console.error("getActivePolls error:", error);
     return [];

@@ -1,8 +1,17 @@
 @import "tailwindcss";
 
+/* ADDED: Tailwind v4 dark mode using .dark class on <html> */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
+}
+
+/* ADDED: Manual dark mode variables */
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
 }
 
 @theme inline {
@@ -12,15 +21,198 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/*
+REMOVED:
+@media (prefers-color-scheme: dark)
+
+Reason:
+Dark mode will now be controlled by your app toggle button,
+not automatically by the device/system theme.
+*/
+
+html {
+  background: var(--background);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ADDED: Helps existing pages support dark mode without editing every component immediately */
+.dark .bg-white {
+  background-color: #0f172a !important;
+}
+
+.dark .bg-slate-50 {
+  background-color: #111827 !important;
+}
+
+.dark .bg-slate-100 {
+  background-color: #020617 !important;
+}
+
+/* CHANGED:
+   Do not apply this to button/a because it made buttons invisible in dark mode.
+*/
+.dark .bg-slate-900:not(button):not(a) {
+  background-color: #020617 !important;
+}
+
+.dark .text-slate-950,
+.dark .text-slate-900,
+.dark .text-slate-800 {
+  color: #f8fafc !important;
+}
+
+.dark .text-slate-700,
+.dark .text-slate-600,
+.dark .text-slate-500 {
+  color: #cbd5e1 !important;
+}
+
+.dark .border-slate-100,
+.dark .border-slate-200,
+.dark .border-slate-300 {
+  border-color: #334155 !important;
+}
+
+.dark .shadow-sm,
+.dark .shadow-md,
+.dark .shadow-lg,
+.dark .shadow-xl,
+.dark .shadow-2xl {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45) !important;
+}
+
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border-color: #334155 !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* FIX: Primary buttons visibility in dark mode */
+.dark button.bg-slate-900,
+.dark a.bg-slate-900 {
+  background-color: #f59e0b !important;
+  color: #ffffff !important;
+  border-color: #f59e0b !important;
+}
+
+.dark button.bg-slate-900:hover,
+.dark a.bg-slate-900:hover {
+  background-color: #d97706 !important;
+}
+
+/* ADDED: Fix white hover issue on outline/share buttons in dark mode */
+.dark button:hover,
+.dark a:hover {
+  border-color: #475569;
+}
+
+/* ADDED: Fix hover:bg-slate-50 becoming too white in dark mode */
+.dark .hover\:bg-slate-50:hover {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+/* ADDED: Fix hover:bg-slate-100 in dark mode */
+.dark .hover\:bg-slate-100:hover {
+  background-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+/* ADDED: Fix hover:bg-white in dark mode */
+.dark .hover\:bg-white:hover {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+/* ADDED: Fix buttons/cards that become white on hover */
+.dark button:hover:not(.bg-slate-900):not(.bg-amber-600):not(.bg-red-600),
+.dark a:hover:not(.bg-slate-900):not(.bg-amber-600):not(.bg-red-600) {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+/* ADDED: Share/action button styling in dark mode */
+.dark button.border-slate-200,
+.dark button.border-slate-300,
+.dark a.border-slate-200,
+.dark a.border-slate-300 {
+  background-color: #0f172a !important;
+  border-color: #334155 !important;
+  color: #e2e8f0 !important;
+}
+
+.dark button.border-slate-200:hover,
+.dark button.border-slate-300:hover,
+.dark a.border-slate-200:hover,
+.dark a.border-slate-300:hover {
+  background-color: #1e293b !important;
+  border-color: #64748b !important;
+  color: #ffffff !important;
+}
+
+/* ADDED: Fix disabled buttons like Copy Link in dark mode */
+.dark button:disabled,
+.dark a[aria-disabled="true"] {
+  background-color: #1e293b !important;
+  color: #64748b !important;
+  border-color: #334155 !important;
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* FIX: Our View / Impact Analysis card readability in dark mode */
+.dark .bg-amber-50,
+.dark .bg-yellow-50,
+.dark .bg-orange-50 {
+  background-color: #1e293b !important;
+}
+
+.dark .border-amber-200,
+.dark .border-yellow-200,
+.dark .border-orange-200 {
+  border-color: #f59e0b !important;
+}
+
+.dark .text-amber-700,
+.dark .text-yellow-700,
+.dark .text-orange-700 {
+  color: #fbbf24 !important;
+}
+
+/* FIX: Article body and Our View paragraph readability */
+.dark article p,
+.dark section p,
+.dark .prose p {
+  color: #dbeafe !important;
+}
+
+/* FIX: General muted text inside dark cards */
+.dark .text-slate-300,
+.dark .text-slate-400 {
+  color: #cbd5e1 !important;
+}
+
+/* FIX: Light cards with amber/yellow backgrounds should not keep pale text */
+.dark .bg-amber-50 p,
+.dark .bg-yellow-50 p,
+.dark .bg-orange-50 p {
+  color: #e2e8f0 !important;
+}
+
+/* FIX: Links inside dark content */
+.dark a {
+  color: inherit;
 }

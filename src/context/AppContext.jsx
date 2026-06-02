@@ -3,6 +3,7 @@
 import {
   createContext,
   useContext,
+  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -18,6 +19,36 @@ export function AppProvider({ children }) {
   const [selectedTag, setSelectedTag] = useState(null);
 
   const [theme, setTheme] = useState("light");
+
+  // ADDED: Load saved theme when app starts
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("contexta-theme");
+
+    if (savedTheme === "dark" || savedTheme === "light") {
+      setTheme(savedTheme);
+      return;
+    }
+
+    setTheme("light");
+  }, []);
+
+  // ADDED: Apply theme to <html> tag and save it
+  useEffect(() => {
+    const root = document.documentElement;
+
+    if (theme === "dark") {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
+
+    localStorage.setItem("contexta-theme", theme);
+  }, [theme]);
+
+  // ADDED: One function to switch light/dark mode
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  };
 
   const openMobileMenu = () => {
     setMobileMenuOpen(true);
@@ -71,6 +102,7 @@ export function AppProvider({ children }) {
 
       setGlobalLoading,
       setTheme,
+      toggleTheme, // ADDED
 
       /* Filters */
       setSelectedCategory,

@@ -28,60 +28,76 @@ import {
 
 const AuthContext = createContext(null);
 
+const buildDefaultUserProfile = (currentUser) => {
+  return {
+    uid: currentUser.uid,
+    email: currentUser.email || "",
+    displayName: currentUser.displayName || "",
+    fullName: currentUser.displayName || "",
+    photoURL: currentUser.photoURL || "",
+    role: "reader",
+    createdAt: null,
+    updatedAt: null,
+  };
+};
+
 export function AuthProvider({ children }) {
   const [firebaseUser, setFirebaseUser] = useState(null);
   const [user, setUser] = useState(null);
-
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(
       auth,
       async (currentUser) => {
+        setLoading(true);
+
         try {
           if (!currentUser) {
             setFirebaseUser(null);
             setUser(null);
-            setLoading(false);
             return;
           }
 
           setFirebaseUser(currentUser);
 
+          const defaultProfile = buildDefaultUserProfile(currentUser);
           const userRef = doc(db, "users", currentUser.uid);
-          const userSnap = await getDoc(userRef);
 
-          let profileData = {
-            uid: currentUser.uid,
-            email: currentUser.email || "",
-            displayName: currentUser.displayName || "",
-            fullName: currentUser.displayName || "",
-            photoURL: currentUser.photoURL || "",
-            role: "reader",
-            createdAt: null,
-          };
+          try {
+            const userSnap = await getDoc(userRef);
 
-          if (userSnap.exists()) {
-            profileData = {
-              ...profileData,
-              ...userSnap.data(),
-            };
-          } else {
-            await setDoc(userRef, {
-              uid: currentUser.uid,
-              email: currentUser.email || "",
-              displayName: currentUser.displayName || "",
-              fullName: currentUser.displayName || "",
-              photoURL: currentUser.photoURL || "",
-              role: "reader",
-              createdAt: serverTimestamp(),
-              updatedAt: serverTimestamp(),
-            });
+            if (userSnap.exists()) {
+              setUser({
+                ...defaultProfile,
+                ...userSnap.data(),
+              });
+            } else {
+              const newUserProfile = {
+                uid: currentUser.uid,
+                email: currentUser.email || "",
+                displayName: currentUser.displayName || "",
+                fullName: currentUser.displayName || "",
+                photoURL: currentUser.photoURL || "",
+                role: "reader",
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+              };
+
+              await setDoc(userRef, newUserProfile);
+
+              setUser(defaultProfile);
+            }
+          } catch (profileError) {
+            console.error("User profile load/create failed:", profileError);
+
+            // Fallback: user can still use public reader features
+            // even if Firestore profile read/write has a temporary rules issue.
+            setUser(defaultProfile);
           }
-
-          setUser(profileData);
         } catch (error) {
           console.error("Auth context error:", error);
+          setFirebaseUser(null);
           setUser(null);
         } finally {
           setLoading(false);
@@ -106,20 +122,23 @@ export function AuthProvider({ children }) {
     if (!firebaseUser?.uid) return;
 
     try {
+      const defaultProfile = buildDefaultUserProfile(firebaseUser);
       const userRef = doc(db, "users", firebaseUser.uid);
       const userSnap = await getDoc(userRef);
 
       if (userSnap.exists()) {
         setUser({
-          uid: firebaseUser.uid,
-          email: firebaseUser.email || "",
-          displayName: firebaseUser.displayName || "",
-          photoURL: firebaseUser.photoURL || "",
+          ...defaultProfile,
           ...userSnap.data(),
         });
+      } else {
+        setUser(defaultProfile);
       }
     } catch (error) {
       console.error("Refresh user failed:", error);
+
+      // Keep current session active even if profile refresh fails
+      setUser(buildDefaultUserProfile(firebaseUser));
     }
   };
 

@@ -7,6 +7,7 @@ import { signOut } from "firebase/auth";
 
 import MobileMenu from "./MobileMenu";
 import { useAuthContext } from "@/context/AuthContext";
+import { useAppContext } from "@/context/AppContext"; // ADDED
 import { auth } from "@/lib/firebase";
 
 export default function Navbar() {
@@ -20,6 +21,9 @@ export default function Navbar() {
   const categoriesDropdownRef = useRef(null);
 
   const { user, isAdmin, isEditor } = useAuthContext();
+
+  // ADDED: get current theme and toggle function from AppContext
+  const { theme, toggleTheme } = useAppContext();
 
   const navLinks = [
     { label: "Home", href: "/" },
@@ -118,11 +122,11 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur">
+      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur transition-colors dark:border-slate-800 dark:bg-slate-950/95">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6">
           {/* Brand */}
           <Link href="/" className="flex items-center">
-            <span className="text-2xl font-extrabold tracking-tight text-slate-900">
+            <span className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
               Contextra
             </span>
           </Link>
@@ -135,8 +139,8 @@ export default function Navbar() {
                 href={item.href}
                 className={`relative text-sm font-medium transition ${
                   isActive(item.href)
-                    ? "text-slate-900"
-                    : "text-slate-600 hover:text-slate-900"
+                    ? "text-slate-900 dark:text-white"
+                    : "text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
                 }`}
               >
                 {item.label}
@@ -154,8 +158,8 @@ export default function Navbar() {
                 onClick={() => setCategoriesOpen((prev) => !prev)}
                 className={`relative flex items-center gap-1 text-sm font-medium transition ${
                   isCategoryActive()
-                    ? "text-slate-900"
-                    : "text-slate-600 hover:text-slate-900"
+                    ? "text-slate-900 dark:text-white"
+                    : "text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
                 }`}
               >
                 Categories
@@ -167,8 +171,8 @@ export default function Navbar() {
               </button>
 
               {categoriesOpen && (
-                <div className="absolute left-0 top-8 w-56 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl">
-                  <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <div className="absolute left-0 top-8 w-56 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+                  <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                     Browse Categories
                   </p>
 
@@ -180,8 +184,8 @@ export default function Navbar() {
                         onClick={closeCategoriesDropdown}
                         className={`block rounded-lg px-3 py-2 text-sm transition ${
                           isActive(item.href)
-                            ? "bg-slate-100 font-medium text-slate-900"
-                            : "text-slate-700 hover:bg-slate-50"
+                            ? "bg-slate-100 font-medium text-slate-900 dark:bg-slate-800 dark:text-white"
+                            : "text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
                         }`}
                       >
                         {item.label}
@@ -189,11 +193,11 @@ export default function Navbar() {
                     ))}
                   </div>
 
-                  <div className="mt-3 border-t border-slate-100 pt-3">
+                  <div className="mt-3 border-t border-slate-100 pt-3 dark:border-slate-700">
                     <Link
                       href="/tag"
                       onClick={closeCategoriesDropdown}
-                      className="block rounded-lg px-3 py-2 text-sm font-medium text-amber-700 transition hover:bg-amber-50"
+                      className="block rounded-lg px-3 py-2 text-sm font-medium text-amber-700 transition hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-slate-800"
                     >
                       Browse All Tags →
                     </Link>
@@ -209,25 +213,36 @@ export default function Navbar() {
               href="/search"
               className={`hidden rounded-lg px-3 py-2 text-sm font-medium transition md:block ${
                 isActive("/search")
-                  ? "bg-slate-100 text-slate-900"
-                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                  ? "bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white"
+                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
               }`}
             >
               Search
             </Link>
 
+            {/* ADDED: Dark / Light mode toggle button */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+              aria-label="Toggle dark mode"
+              title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            >
+              {theme === "dark" ? "☀️" : "🌙"}
+            </button>
+
             {!user ? (
               <>
                 <Link
                   href="/login"
-                  className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                  className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-800"
                 >
                   Login
                 </Link>
 
                 <Link
                   href="/signup"
-                  className="hidden rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 sm:block"
+                  className="hidden rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 dark:bg-amber-600 dark:hover:bg-amber-700 sm:block"
                 >
                   Sign Up
                 </Link>
@@ -238,19 +253,19 @@ export default function Navbar() {
                 <button
                   type="button"
                   onClick={() => setProfileOpen((prev) => !prev)}
-                  className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-2 py-1 pr-3 transition hover:bg-slate-50"
+                  className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-2 py-1 pr-3 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
                   aria-label="Open profile menu"
                 >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white dark:bg-amber-600">
                     {getUserInitial()}
                   </div>
 
                   <div className="hidden text-left sm:block">
-                    <p className="max-w-[140px] truncate text-sm font-semibold text-slate-900">
+                    <p className="max-w-[140px] truncate text-sm font-semibold text-slate-900 dark:text-white">
                       {getDisplayName()}
                     </p>
 
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
                       {getUserRoleLabel()}
                     </p>
                   </div>
@@ -262,20 +277,20 @@ export default function Navbar() {
 
                 {/* Profile Dropdown */}
                 {profileOpen && (
-                  <div className="absolute right-0 mt-3 w-72 rounded-2xl border border-slate-200 bg-white p-4 shadow-xl">
+                  <div className="absolute right-0 mt-3 w-72 rounded-2xl border border-slate-200 bg-white p-4 shadow-xl dark:border-slate-700 dark:bg-slate-900">
                     {/* User Info */}
-                    <div className="border-b border-slate-100 pb-4">
-                      <p className="text-sm font-semibold text-slate-900">
+                    <div className="border-b border-slate-100 pb-4 dark:border-slate-700">
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white">
                         {getDisplayName()}
                       </p>
 
                       {user?.email && (
-                        <p className="mt-1 break-all text-xs text-slate-500">
+                        <p className="mt-1 break-all text-xs text-slate-500 dark:text-slate-400">
                           {user.email}
                         </p>
                       )}
 
-                      <div className="mt-3 inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                      <div className="mt-3 inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200">
                         {getUserRoleLabel()}
                       </div>
                     </div>
@@ -285,7 +300,7 @@ export default function Navbar() {
                       <Link
                         href="/profile"
                         onClick={closeProfileDropdown}
-                        className="block rounded-lg px-3 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50"
+                        className="block rounded-lg px-3 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
                       >
                         My Profile
                       </Link>
@@ -293,7 +308,7 @@ export default function Navbar() {
                       <Link
                         href="/latest"
                         onClick={closeProfileDropdown}
-                        className="block rounded-lg px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-50"
+                        className="block rounded-lg px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
                       >
                         Latest Articles
                       </Link>
@@ -301,7 +316,7 @@ export default function Navbar() {
                       <Link
                         href="/tag"
                         onClick={closeProfileDropdown}
-                        className="block rounded-lg px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-50"
+                        className="block rounded-lg px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
                       >
                         Browse Tags
                       </Link>
@@ -309,7 +324,7 @@ export default function Navbar() {
                       <Link
                         href="/timeline"
                         onClick={closeProfileDropdown}
-                        className="block rounded-lg px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-50"
+                        className="block rounded-lg px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
                       >
                         Timelines
                       </Link>
@@ -317,15 +332,15 @@ export default function Navbar() {
 
                     {/* Admin / Editor Only */}
                     {(isAdmin || isEditor) && (
-                      <div className="mt-4 border-t border-slate-100 pt-4">
-                        <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      <div className="mt-4 border-t border-slate-100 pt-4 dark:border-slate-700">
+                        <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                           Management
                         </p>
 
                         <Link
                           href="/admin"
                           onClick={closeProfileDropdown}
-                          className="block rounded-lg px-3 py-2 text-sm font-medium text-slate-900 transition hover:bg-slate-50"
+                          className="block rounded-lg px-3 py-2 text-sm font-medium text-slate-900 transition hover:bg-slate-50 dark:text-white dark:hover:bg-slate-800"
                         >
                           Admin Dashboard
                         </Link>
@@ -333,7 +348,7 @@ export default function Navbar() {
                         <Link
                           href="/admin/articles"
                           onClick={closeProfileDropdown}
-                          className="block rounded-lg px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-50"
+                          className="block rounded-lg px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
                         >
                           Manage Articles
                         </Link>
@@ -341,7 +356,7 @@ export default function Navbar() {
                         <Link
                           href="/admin/polls"
                           onClick={closeProfileDropdown}
-                          className="block rounded-lg px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-50"
+                          className="block rounded-lg px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
                         >
                           Manage Polls
                         </Link>
@@ -349,11 +364,11 @@ export default function Navbar() {
                     )}
 
                     {/* Logout */}
-                    <div className="mt-4 border-t border-slate-100 pt-4">
+                    <div className="mt-4 border-t border-slate-100 pt-4 dark:border-slate-700">
                       <button
                         type="button"
                         onClick={handleLogout}
-                        className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-red-600 transition hover:bg-red-50"
+                        className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
                       >
                         Logout
                       </button>
@@ -367,7 +382,7 @@ export default function Navbar() {
             <button
               type="button"
               onClick={() => setMobileOpen(true)}
-              className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 bg-white text-2xl font-bold text-slate-900 transition hover:bg-slate-50 md:hidden"
+              className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 bg-white text-2xl font-bold text-slate-900 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:hover:bg-slate-800 md:hidden"
               aria-label="Open mobile menu"
             >
               ☰

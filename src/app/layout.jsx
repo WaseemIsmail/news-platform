@@ -54,7 +54,7 @@ export default function RootLayout({ children }) {
       </head>
 
       <body
-        className={`${inter.className} bg-white text-slate-900 antialiased`}
+        className={`${inter.className} bg-white text-slate-900 antialiased transition-colors duration-300 dark:bg-slate-950 dark:text-slate-100`}
       >
         <AuthProvider>
           <AppProvider>

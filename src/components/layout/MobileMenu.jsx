@@ -6,11 +6,15 @@ import { useEffect } from "react";
 import { signOut } from "firebase/auth";
 
 import { useAuthContext } from "@/context/AuthContext";
+import { useAppContext } from "@/context/AppContext"; // ADDED
 import { auth } from "@/lib/firebase";
 
 export default function MobileMenu({ isOpen, onClose }) {
   const pathname = usePathname();
   const { user, isAdmin, isEditor } = useAuthContext();
+
+  // ADDED: theme state and toggle function
+  const { theme, toggleTheme } = useAppContext();
 
   const navigationLinks = [
     { label: "Home", href: "/" },
@@ -124,13 +128,13 @@ export default function MobileMenu({ isOpen, onClose }) {
       />
 
       {/* Drawer */}
-      <aside className="fixed right-0 top-0 z-[100] flex h-screen w-[85%] max-w-sm flex-col bg-white shadow-2xl">
+      <aside className="fixed right-0 top-0 z-[100] flex h-screen w-[85%] max-w-sm flex-col bg-white shadow-2xl transition-colors dark:bg-slate-950">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
+        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5 dark:border-slate-800">
           <Link
             href="/"
             onClick={onClose}
-            className="text-2xl font-bold tracking-tight text-slate-900"
+            className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100"
           >
             Contextra
           </Link>
@@ -139,9 +143,21 @@ export default function MobileMenu({ isOpen, onClose }) {
             type="button"
             onClick={onClose}
             aria-label="Close menu"
-            className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-800"
           >
             ✕
+          </button>
+        </div>
+
+        {/* ADDED: Mobile dark/light mode toggle */}
+        <div className="border-b border-slate-200 px-6 py-4 dark:border-slate-800">
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+          >
+            <span>Appearance</span>
+            <span>{theme === "dark" ? "☀️ Light Mode" : "🌙 Dark Mode"}</span>
           </button>
         </div>
 
@@ -149,26 +165,26 @@ export default function MobileMenu({ isOpen, onClose }) {
         <div className="flex-1 overflow-y-auto px-6 py-6">
           {/* User Info */}
           {user && (
-            <div className="mb-8 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div className="mb-8 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
               <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white dark:bg-amber-600">
                   {getUserInitial()}
                 </div>
 
                 <div>
-                  <p className="text-sm font-semibold text-slate-900">
+                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                     {getDisplayName()}
                   </p>
 
                   {user?.email && (
-                    <p className="mt-1 break-all text-xs text-slate-500">
+                    <p className="mt-1 break-all text-xs text-slate-500 dark:text-slate-400">
                       {user.email}
                     </p>
                   )}
                 </div>
               </div>
 
-              <span className="mt-4 inline-flex rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700">
+              <span className="mt-4 inline-flex rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200">
                 {getUserRoleLabel()}
               </span>
             </div>
@@ -176,7 +192,7 @@ export default function MobileMenu({ isOpen, onClose }) {
 
           {/* Main Navigation */}
           <div>
-            <p className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">
+            <p className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-amber-700 dark:text-amber-400">
               Main Navigation
             </p>
 
@@ -188,8 +204,8 @@ export default function MobileMenu({ isOpen, onClose }) {
                   onClick={onClose}
                   className={`block rounded-2xl px-4 py-3 text-sm font-medium transition ${
                     isActive(item.href)
-                      ? "bg-slate-900 text-white"
-                      : "text-slate-700 hover:bg-slate-50"
+                      ? "bg-slate-900 text-white dark:bg-amber-600"
+                      : "text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
                   }`}
                 >
                   {item.label}
@@ -200,7 +216,7 @@ export default function MobileMenu({ isOpen, onClose }) {
 
           {/* Categories */}
           <div className="mt-10">
-            <p className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+            <p className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
               Categories
             </p>
 
@@ -212,8 +228,8 @@ export default function MobileMenu({ isOpen, onClose }) {
                   onClick={onClose}
                   className={`block rounded-2xl px-4 py-3 text-sm font-medium transition ${
                     isActive(item.href)
-                      ? "bg-slate-100 text-slate-900"
-                      : "text-slate-700 hover:bg-slate-50"
+                      ? "bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white"
+                      : "text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
                   }`}
                 >
                   {item.label}
@@ -225,8 +241,8 @@ export default function MobileMenu({ isOpen, onClose }) {
                 onClick={onClose}
                 className={`block rounded-2xl px-4 py-3 text-sm font-semibold transition ${
                   isActive("/tag")
-                    ? "bg-amber-100 text-amber-800"
-                    : "text-amber-700 hover:bg-amber-50"
+                    ? "bg-amber-100 text-amber-800 dark:bg-amber-700 dark:text-white"
+                    : "text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-slate-800"
                 }`}
               >
                 Browse All Tags →
@@ -237,7 +253,7 @@ export default function MobileMenu({ isOpen, onClose }) {
           {/* User Links */}
           {user && (
             <div className="mt-10">
-              <p className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+              <p className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                 My Account
               </p>
 
@@ -249,8 +265,8 @@ export default function MobileMenu({ isOpen, onClose }) {
                     onClick={onClose}
                     className={`block rounded-2xl px-4 py-3 text-sm font-medium transition ${
                       isActive(item.href)
-                        ? "bg-slate-100 text-slate-900"
-                        : "text-slate-700 hover:bg-slate-50"
+                        ? "bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white"
+                        : "text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
                     }`}
                   >
                     {item.label}
@@ -263,7 +279,7 @@ export default function MobileMenu({ isOpen, onClose }) {
           {/* Auth Links */}
           {!user && (
             <div className="mt-10">
-              <p className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+              <p className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                 Account
               </p>
 
@@ -271,7 +287,7 @@ export default function MobileMenu({ isOpen, onClose }) {
                 <Link
                   href="/login"
                   onClick={onClose}
-                  className="block rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                  className="block rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
                 >
                   Login
                 </Link>
@@ -279,7 +295,7 @@ export default function MobileMenu({ isOpen, onClose }) {
                 <Link
                   href="/signup"
                   onClick={onClose}
-                  className="block rounded-2xl bg-slate-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-slate-800"
+                  className="block rounded-2xl bg-slate-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-slate-800 dark:bg-amber-600 dark:hover:bg-amber-700"
                 >
                   Sign Up
                 </Link>
@@ -290,7 +306,7 @@ export default function MobileMenu({ isOpen, onClose }) {
           {/* Admin / Editor Links */}
           {user && (isAdmin || isEditor) && (
             <div className="mt-10">
-              <p className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+              <p className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                 Management
               </p>
 
@@ -302,8 +318,8 @@ export default function MobileMenu({ isOpen, onClose }) {
                     onClick={onClose}
                     className={`block rounded-2xl px-4 py-3 text-sm font-medium transition ${
                       isActive(item.href)
-                        ? "bg-slate-100 text-slate-900"
-                        : "text-slate-700 hover:bg-slate-50"
+                        ? "bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white"
+                        : "text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
                     }`}
                   >
                     {item.label}
@@ -319,7 +335,7 @@ export default function MobileMenu({ isOpen, onClose }) {
               <button
                 type="button"
                 onClick={handleLogout}
-                className="w-full rounded-2xl bg-red-50 px-4 py-3 text-left text-sm font-medium text-red-600 transition hover:bg-red-100"
+                className="w-full rounded-2xl bg-red-50 px-4 py-3 text-left text-sm font-medium text-red-600 transition hover:bg-red-100 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-950/50"
               >
                 Logout
               </button>
@@ -328,12 +344,12 @@ export default function MobileMenu({ isOpen, onClose }) {
         </div>
 
         {/* Footer */}
-        <div className="border-t border-slate-200 px-6 py-5">
-          <div className="space-y-2 text-sm text-slate-500">
+        <div className="border-t border-slate-200 px-6 py-5 dark:border-slate-800">
+          <div className="space-y-2 text-sm text-slate-500 dark:text-slate-400">
             <Link
               href="/about"
               onClick={onClose}
-              className="block transition hover:text-slate-900"
+              className="block transition hover:text-slate-900 dark:hover:text-slate-100"
             >
               About
             </Link>
@@ -341,7 +357,7 @@ export default function MobileMenu({ isOpen, onClose }) {
             <Link
               href="/privacy"
               onClick={onClose}
-              className="block transition hover:text-slate-900"
+              className="block transition hover:text-slate-900 dark:hover:text-slate-100"
             >
               Privacy Policy
             </Link>
@@ -349,7 +365,7 @@ export default function MobileMenu({ isOpen, onClose }) {
             <Link
               href="/terms"
               onClick={onClose}
-              className="block transition hover:text-slate-900"
+              className="block transition hover:text-slate-900 dark:hover:text-slate-100"
             >
               Terms of Service
             </Link>
@@ -357,7 +373,7 @@ export default function MobileMenu({ isOpen, onClose }) {
             <Link
               href="/contact"
               onClick={onClose}
-              className="block transition hover:text-slate-900"
+              className="block transition hover:text-slate-900 dark:hover:text-slate-100"
             >
               Contact
             </Link>
