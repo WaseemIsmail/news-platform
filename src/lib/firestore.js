@@ -196,7 +196,7 @@ export const getPublishedArticles = async () => {
 
 export const getArticleBySlug = async (slug) => {
   try {
-    const normalizedSlug = generateSlug(slug);
+    const normalizedSlug = slug?.toString().trim().toLowerCase();
 
     const q = query(
       articlesCollection,
