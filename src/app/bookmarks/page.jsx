@@ -2,189 +2,70 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { auth, db } from "@/lib/firebase";
-import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
+import AccountShell from "@/components/account/AccountShell";
+import AccountState from "@/components/account/AccountState";
+import ArticleCard from "@/components/article/ArticleCard";
+import { useAuthContext } from "@/context/AuthContext";
+import { db } from "@/lib/firebase";
 
 export default function BookmarksPage() {
-  const [user, setUser] = useState(null);
+  const { user, loading: authLoading } = useAuthContext();
   const [bookmarks, setBookmarks] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const loadBookmarks = async () => {
-    try {
-      const savedBookmarkIds = JSON.parse(
-        localStorage.getItem("bookmarkedArticles") || "[]"
-      );
-
-      if (!savedBookmarkIds.length) {
-        setBookmarks([]);
-        setLoading(false);
-        return;
-      }
-
-      const articlePromises = savedBookmarkIds.map(async (articleId) => {
-        try {
-          const articleRef = doc(db, "articles", articleId);
-          const articleSnap = await getDoc(articleRef);
-
-          if (articleSnap.exists()) {
-            return {
-              id: articleSnap.id,
-              ...articleSnap.data(),
-            };
-          }
-
-          return null;
-        } catch (error) {
-          console.error(`Failed to fetch article ${articleId}:`, error);
-          return null;
-        }
-      });
-
-      const articles = await Promise.all(articlePromises);
-
-      setBookmarks(articles.filter(Boolean));
-    } catch (error) {
-      console.error("Failed to load bookmarks:", error);
-      setBookmarks([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
+    if (!user?.uid) return undefined;
+    let active = true;
 
-      if (currentUser) {
-        loadBookmarks();
-      } else {
-        setLoading(false);
+    const loadBookmarks = async () => {
+      await Promise.resolve();
+      try {
+        const savedIds = JSON.parse(localStorage.getItem("bookmarkedArticles") || "[]");
+        const ids = Array.isArray(savedIds) ? savedIds : [];
+        const articles = await Promise.all(ids.map(async (articleId) => {
+          try {
+            const snapshot = await getDoc(doc(db, "articles", articleId));
+            return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null;
+          } catch (articleError) {
+            console.error(`Failed to load saved article ${articleId}:`, articleError);
+            return null;
+          }
+        }));
+
+        if (active) setBookmarks(articles.filter((article) => article?.status === "published" && article?.slug));
+      } catch (bookmarkError) {
+        console.error("Failed to load saved stories:", bookmarkError);
+        if (active) setMessage("Your saved stories could not be loaded. Please try again.");
+      } finally {
+        if (active) setLoading(false);
       }
-    });
+    };
 
-    return () => unsubscribe();
-  }, []);
+    loadBookmarks();
+    return () => { active = false; };
+  }, [user?.uid]);
 
-  if (loading) {
-    return (
-      <main className="bg-white min-h-screen">
-        <div className="mx-auto max-w-6xl px-6 py-20 text-center">
-          <p className="text-slate-600">Loading saved articles...</p>
-        </div>
-      </main>
-    );
-  }
+  const removeBookmark = (articleId) => {
+    const nextBookmarks = bookmarks.filter((article) => article.id !== articleId);
+    setBookmarks(nextBookmarks);
+    localStorage.setItem("bookmarkedArticles", JSON.stringify(nextBookmarks.map((article) => article.id)));
+    setMessage("Story removed from your reading list.");
+    window.setTimeout(() => setMessage(""), 2500);
+  };
 
-  if (!user) {
-    return (
-      <main className="bg-white min-h-screen">
-        <div className="mx-auto max-w-6xl px-6 py-20 text-center">
-          <h1 className="text-3xl font-bold text-slate-900">
-            Please Login First
-          </h1>
-
-          <p className="mt-4 text-slate-600">
-            Sign in to view your saved articles.
-          </p>
-
-          <Link
-            href="/login"
-            className="mt-8 inline-block rounded-xl bg-slate-900 px-6 py-3 text-white hover:bg-slate-800"
-          >
-            Go to Login
-          </Link>
-        </div>
-      </main>
-    );
-  }
+  if (authLoading || (user && loading)) return <AccountState loading />;
+  if (!user) return <AccountState title="Sign in to see saved stories" description="Your reading list is connected to your reader account on this device." />;
 
   return (
-    <main className="bg-white min-h-screen">
-      <section className="border-b border-slate-200 bg-slate-50">
-        <div className="mx-auto max-w-6xl px-6 py-16">
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-700">
-            Bookmarks
-          </p>
-
-          <h1 className="mt-3 text-4xl font-bold text-slate-900">
-            Saved Articles
-          </h1>
-
-          <p className="mt-4 text-slate-600">
-            Your personal reading list for later.
-          </p>
-        </div>
-      </section>
-
-      <section className="py-16">
-        <div className="mx-auto max-w-6xl px-6">
-          {bookmarks.length === 0 ? (
-            <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm">
-              <h2 className="text-2xl font-semibold text-slate-900">
-                No saved articles yet
-              </h2>
-
-              <p className="mt-4 text-slate-600">
-                Start bookmarking important stories to read later.
-              </p>
-
-              <Link
-                href="/latest"
-                className="mt-8 inline-block rounded-xl bg-slate-900 px-6 py-3 text-white hover:bg-slate-800"
-              >
-                Explore Articles
-              </Link>
-            </div>
-          ) : (
-            <>
-              <div className="mb-8">
-                <h2 className="text-2xl font-bold text-slate-900">
-                  {bookmarks.length} Saved Article{bookmarks.length > 1 ? "s" : ""}
-                </h2>
-              </div>
-
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {bookmarks.map((article) => (
-                  <article
-                    key={article.id}
-                    className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md"
-                  >
-                    <span className="inline-block rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800">
-                      {article.category || "General"}
-                    </span>
-
-                    <h3 className="mt-4 text-xl font-semibold leading-8 text-slate-900">
-                      {article.title}
-                    </h3>
-
-                    <p className="mt-4 text-sm leading-7 text-slate-600">
-                      {article.summary ||
-                        "Read the full article and understand the deeper context behind the story."}
-                    </p>
-
-                    <div className="mt-6 flex items-center justify-between">
-                      <div className="text-sm text-slate-400">
-                        {article.createdAt?.toDate
-                          ? article.createdAt.toDate().toLocaleDateString()
-                          : "Recently published"}
-                      </div>
-
-                      <Link
-                        href={`/article/${article.slug}`}
-                        className="text-sm font-semibold text-slate-900 transition hover:text-amber-700"
-                      >
-                        Read More →
-                      </Link>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-      </section>
-    </main>
+    <AccountShell eyebrow="Your library" title="Saved stories" description="A focused reading list for reporting you want to revisit—without losing it in an endless feed." actions={<Link href="/latest" className="rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white dark:bg-amber-400 dark:text-slate-950">Find more stories</Link>}>
+      {message && <div className="mb-5 rounded-xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white dark:bg-amber-400 dark:text-slate-950" role="status" aria-live="polite">{message}</div>}
+      {bookmarks.length === 0 ? (
+        <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center dark:border-slate-700 dark:bg-slate-900 sm:p-14"><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 text-xl font-black text-amber-800 dark:bg-amber-500/15 dark:text-amber-300" aria-hidden="true">＋</div><h2 className="mt-5 text-2xl font-black">Build your reading list</h2><p className="mx-auto mt-3 max-w-lg leading-7 text-slate-600 dark:text-slate-300">Use the Save button on any article. Stories you want to revisit will appear here.</p><Link href="/latest" className="mt-7 inline-flex rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white dark:bg-amber-400 dark:text-slate-950">Explore latest stories</Link></div>
+      ) : (
+        <><div className="mb-6 flex flex-wrap items-end justify-between gap-3"><div><h2 className="text-2xl font-black">Your reading list</h2><p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{bookmarks.length} saved {bookmarks.length === 1 ? "story" : "stories"}</p></div><p className="text-xs text-slate-500 dark:text-slate-400">Saved on this browser</p></div><div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">{bookmarks.map((article) => <div key={article.id} className="relative"><ArticleCard article={article} /><button type="button" onClick={() => removeBookmark(article.id)} className="absolute right-3 top-3 z-10 rounded-full bg-slate-950/85 px-3 py-2 text-xs font-bold text-white backdrop-blur transition hover:bg-red-600" aria-label={`Remove ${article.title} from saved stories`}>Remove</button></div>)}</div></>
+      )}
+    </AccountShell>
   );
 }

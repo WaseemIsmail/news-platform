@@ -8,11 +8,12 @@ import {
 } from "@/lib/firestore";
 import { readingTime } from "@/utils/readingTime";
 import { slugify } from "@/utils/slugify";
+import { calculateSeoQuality, enrichArticleSeo } from "@/lib/seoQuality";
 
 export const createArticle = async (articleData) => {
   const slug = slugify(articleData.title);
 
-  const payload = {
+  const payload = enrichArticleSeo({
     title: articleData.title,
     slug,
     summary: articleData.summary || "",
@@ -25,9 +26,9 @@ export const createArticle = async (articleData) => {
     views: 0,
     featured: articleData.featured || false,
     tags: articleData.tags || [],
-  };
+  });
 
-  return await createArticleDoc(payload);
+  return await createArticleDoc({ ...payload, seoQuality: calculateSeoQuality(payload) });
 };
 
 export const fetchAllArticles = async () => {
@@ -43,13 +44,13 @@ export const fetchArticleBySlug = async (slug) => {
 };
 
 export const editArticle = async (id, articleData) => {
-  const payload = {
+  const payload = enrichArticleSeo({
     ...articleData,
     slug: slugify(articleData.title),
     readingTime: readingTime(articleData.content || ""),
-  };
+  });
 
-  return await updateArticleDoc(id, payload);
+  return await updateArticleDoc(id, { ...payload, seoQuality: calculateSeoQuality(payload) });
 };
 
 export const removeArticle = async (id) => {

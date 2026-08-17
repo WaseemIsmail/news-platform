@@ -3,9 +3,12 @@ export const siteMetadata = {
   title: "Contextra - Understand Current Events with Context",
   description:
     "Contextra helps readers understand current events through historical context, clear analysis, and real public discussion.",
-  siteUrl: "https://your-domain.com",
-  ogImage: "/images/default-og.jpg",
+  siteUrl: "https://contextra.netlify.app",
+  ogImage: "/opengraph-image",
   author: "Contextra",
+  language: "en",
+  locale: "en_US",
+  publisherLogo: "/favicon.ico",
   keywords: [
     "Contextra",
     "news analysis",
@@ -19,3 +22,10 @@ export const siteMetadata = {
     "context based news",
   ],
 };
+
+export function absoluteUrl(path = "/") {
+  if (/^https?:\/\//i.test(path)) return path;
+
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${siteMetadata.siteUrl}${normalizedPath}`;
+}

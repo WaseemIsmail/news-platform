@@ -198,17 +198,17 @@ export default function PollBox({ poll }) {
   }
 
   return (
-    <section className="mt-10 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section className="mt-10 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <div className="mb-6">
-        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-700">
+        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-700 dark:text-amber-400">
           Reader Poll
         </p>
 
-        <h3 className="mt-2 text-xl font-semibold text-slate-900">
+        <h3 className="mt-2 text-xl font-semibold text-slate-900 dark:text-white">
           {poll.question || "What do you think about this issue?"}
         </h3>
 
-        <p className="mt-2 text-sm leading-7 text-slate-600">
+        <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
           Cast your vote and see the result percentage.
         </p>
       </div>
@@ -227,8 +227,8 @@ export default function PollBox({ poll }) {
                   onClick={() => setSelectedOptionIndex(index)}
                   className={`w-full rounded-xl border px-4 py-3 text-left text-sm font-medium transition ${
                     isSelected
-                      ? "border-amber-300 bg-amber-50 text-amber-800"
-                      : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
+                      ? "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-400 dark:bg-amber-400/15 dark:text-amber-300"
+                      : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:bg-slate-800"
                   } disabled:cursor-not-allowed`}
                 >
                   {option.label}
@@ -242,7 +242,7 @@ export default function PollBox({ poll }) {
               type="button"
               onClick={handleVote}
               disabled={selectedOptionIndex === null || loading || checkingVote}
-              className="rounded-lg bg-slate-900 px-6 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+              className="rounded-lg bg-slate-900 px-6 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-amber-400 dark:text-slate-950 dark:hover:bg-amber-300"
             >
               {checkingVote
                 ? "Checking..."
@@ -255,15 +255,15 @@ export default function PollBox({ poll }) {
       )}
 
       {message && (
-        <p className="mt-4 text-sm font-medium text-slate-600">{message}</p>
+        <p className="mt-4 text-sm font-medium text-slate-600 dark:text-slate-300">{message}</p>
       )}
 
       {voted && (
         <>
-          <div className="rounded-xl bg-slate-50 p-4">
-            <p className="text-sm font-medium text-slate-700">
+          <div className="rounded-xl bg-slate-50 p-4 dark:bg-slate-950">
+            <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
               You voted:{" "}
-              <span className="font-semibold text-slate-900">
+              <span className="font-semibold text-slate-900 dark:text-white">
                 {userVote?.optionLabel ||
                   options[selectedOptionIndex]?.label ||
                   "Selected option"}

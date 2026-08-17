@@ -11,8 +11,8 @@ export async function generateMetadata() {
     title: "Fact Check | Contextra",
     description:
       "Verify claims, uncover misinformation, and read trusted fact-check reports on politics, business, technology, and global affairs.",
-    image: "/images/default-og.jpg",
-    url: "https://contextra.vercel.app/fact-check",
+    image: "/opengraph-image",
+    url: "/fact-check",
   });
 }
 
@@ -32,17 +32,17 @@ function formatDate(dateValue) {
 
 function getSafeImage(image) {
   if (!image || typeof image !== "string") {
-    return "/images/default-og.jpg";
+    return "/opengraph-image";
   }
 
   const trimmedImage = image.trim();
 
   if (!trimmedImage) {
-    return "/images/default-og.jpg";
+    return "/opengraph-image";
   }
 
   // Valid local image from public folder
-  // Example: /images/default-og.jpg
+  // Example: /opengraph-image
   if (trimmedImage.startsWith("/")) {
     return trimmedImage;
   }
@@ -57,7 +57,7 @@ function getSafeImage(image) {
   }
 
   // Invalid image value like: test, abc.jpg, www.example.com/image.jpg
-  return "/images/default-og.jpg";
+  return "/opengraph-image";
 }
 
 export default async function FactCheckPage() {

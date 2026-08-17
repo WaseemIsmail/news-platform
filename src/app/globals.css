@@ -1,218 +1,256 @@
 @import "tailwindcss";
 
-/* ADDED: Tailwind v4 dark mode using .dark class on <html> */
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #0f172a;
+  --surface: #ffffff;
+  --surface-muted: #f8fafc;
+  --border: #e2e8f0;
+  color-scheme: light;
 }
 
-/* ADDED: Manual dark mode variables */
 .dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  --background: #020617;
+  --foreground: #e5e7eb;
+  --surface: #0f172a;
+  --surface-muted: #0b1220;
+  --border: #273449;
+  color-scheme: dark;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 }
-
-/*
-REMOVED:
-@media (prefers-color-scheme: dark)
-
-Reason:
-Dark mode will now be controlled by your app toggle button,
-not automatically by the device/system theme.
-*/
 
 html {
   background: var(--background);
+  scroll-behavior: smooth;
 }
 
 body {
+  min-height: 100vh;
+  overflow-x: hidden;
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  font-family: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  transition: background-color 180ms ease, color 180ms ease;
+  text-rendering: optimizeLegibility;
 }
 
-/* ADDED: Helps existing pages support dark mode without editing every component immediately */
-.dark .bg-white {
-  background-color: #0f172a !important;
+h1,
+h2,
+h3 {
+  text-wrap: balance;
 }
 
-.dark .bg-slate-50 {
-  background-color: #111827 !important;
+p,
+li {
+  text-wrap: pretty;
 }
 
-.dark .bg-slate-100 {
-  background-color: #020617 !important;
+:where(button, input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+  min-height: 44px;
 }
 
-/* CHANGED:
-   Do not apply this to button/a because it made buttons invisible in dark mode.
-*/
-.dark .bg-slate-900:not(button):not(a) {
-  background-color: #020617 !important;
+:where(button:not(:disabled), select, summary) {
+  cursor: pointer;
 }
 
-.dark .text-slate-950,
-.dark .text-slate-900,
-.dark .text-slate-800 {
-  color: #f8fafc !important;
+.article-prose {
+  font-size: 1.0625rem;
+  line-height: 1.9;
+  letter-spacing: -0.006em;
 }
 
-.dark .text-slate-700,
-.dark .text-slate-600,
-.dark .text-slate-500 {
-  color: #cbd5e1 !important;
+.reader-size-compact .article-prose {
+  font-size: 1rem;
+  line-height: 1.75;
 }
 
-.dark .border-slate-100,
-.dark .border-slate-200,
-.dark .border-slate-300 {
-  border-color: #334155 !important;
+.reader-size-large .article-prose {
+  font-size: 1.1875rem;
+  line-height: 2;
 }
 
-.dark .shadow-sm,
-.dark .shadow-md,
-.dark .shadow-lg,
-.dark .shadow-xl,
-.dark .shadow-2xl {
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45) !important;
+@media (min-width: 640px) {
+  .article-prose {
+    font-size: 1.125rem;
+  }
+
+  .reader-size-compact .article-prose {
+    font-size: 1.0625rem;
+  }
+
+  .reader-size-large .article-prose {
+    font-size: 1.3125rem;
+  }
 }
 
-.dark input,
-.dark textarea,
-.dark select {
-  background-color: #0f172a !important;
-  color: #f8fafc !important;
-  border-color: #334155 !important;
+@media (prefers-contrast: more) {
+  :where(a, button, input, textarea, select):focus-visible {
+    outline-width: 4px;
+  }
+
+  :where([class*="border-slate-2"], [class*="border-slate-3"]) {
+    border-color: #64748b;
+  }
 }
 
-.dark input::placeholder,
-.dark textarea::placeholder {
-  color: #94a3b8 !important;
+::selection {
+  background: #fbbf24;
+  color: #0f172a;
 }
 
-/* FIX: Primary buttons visibility in dark mode */
-.dark button.bg-slate-900,
-.dark a.bg-slate-900 {
-  background-color: #f59e0b !important;
-  color: #ffffff !important;
-  border-color: #f59e0b !important;
+:where(a, button, input, textarea, select, summary):focus-visible {
+  outline: 3px solid #f59e0b;
+  outline-offset: 3px;
 }
 
-.dark button.bg-slate-900:hover,
-.dark a.bg-slate-900:hover {
-  background-color: #d97706 !important;
+.dark :where(input, textarea, select) {
+  accent-color: #fbbf24;
 }
 
-/* ADDED: Fix white hover issue on outline/share buttons in dark mode */
-.dark button:hover,
-.dark a:hover {
+.dark ::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #020617;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  border: 3px solid #020617;
+  border-radius: 999px;
+  background: #475569;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Compatibility layer for older public components that do not yet carry an
+   explicit dark:* class. Explicit component dark styles always take priority. */
+.dark .bg-white:not([class*="dark:bg-"]) {
+  background-color: #0f172a;
+}
+
+.dark :is(.bg-slate-50, .bg-gray-50):not([class*="dark:bg-"]) {
+  background-color: #0b1220;
+}
+
+.dark :is(.bg-slate-100, .bg-gray-100):not([class*="dark:bg-"]) {
+  background-color: #111827;
+}
+
+.dark .bg-slate-900:not([class*="dark:bg-"]):not([class*="dark:text-"]) {
+  background-color: #fbbf24;
+  color: #0f172a;
+}
+
+.dark :is(.text-black, .text-slate-950, .text-slate-900, .text-slate-800, .text-gray-950, .text-gray-900, .text-gray-800):not([class*="dark:text-"]) {
+  color: #f8fafc;
+}
+
+.dark :is(.text-slate-700, .text-slate-600, .text-slate-500, .text-gray-700, .text-gray-600, .text-gray-500):not([class*="dark:text-"]) {
+  color: #cbd5e1;
+}
+
+.dark :is(.text-slate-400, .text-gray-400):not([class*="dark:text-"]) {
+  color: #94a3b8;
+}
+
+.dark :is(.border-slate-100, .border-slate-200, .border-slate-300, .border-gray-100, .border-gray-200, .border-gray-300):not([class*="dark:border-"]) {
+  border-color: #334155;
+}
+
+.dark :is(input, textarea, select):not([class*="dark:bg-"]) {
   border-color: #475569;
+  background-color: #0b1220;
+  color: #f8fafc;
 }
 
-/* ADDED: Fix hover:bg-slate-50 becoming too white in dark mode */
-.dark .hover\:bg-slate-50:hover {
-  background-color: #1e293b !important;
-  color: #f8fafc !important;
+.dark :is(input, textarea)::placeholder {
+  color: #64748b;
 }
 
-/* ADDED: Fix hover:bg-slate-100 in dark mode */
-.dark .hover\:bg-slate-100:hover {
-  background-color: #334155 !important;
-  color: #f8fafc !important;
+.dark :is(.bg-amber-50, .bg-yellow-50, .bg-orange-50):not([class*="dark:bg-"]) {
+  background-color: rgba(245, 158, 11, 0.08);
 }
 
-/* ADDED: Fix hover:bg-white in dark mode */
-.dark .hover\:bg-white:hover {
-  background-color: #1e293b !important;
-  color: #f8fafc !important;
+.dark :is(.bg-amber-100, .bg-yellow-100, .bg-orange-100):not([class*="dark:bg-"]) {
+  background-color: rgba(245, 158, 11, 0.16);
 }
 
-/* ADDED: Fix buttons/cards that become white on hover */
-.dark button:hover:not(.bg-slate-900):not(.bg-amber-600):not(.bg-red-600),
-.dark a:hover:not(.bg-slate-900):not(.bg-amber-600):not(.bg-red-600) {
-  background-color: #1e293b !important;
-  color: #f8fafc !important;
+.dark :is(.border-amber-200, .border-yellow-200, .border-orange-200):not([class*="dark:border-"]) {
+  border-color: rgba(245, 158, 11, 0.42);
 }
 
-/* ADDED: Share/action button styling in dark mode */
-.dark button.border-slate-200,
-.dark button.border-slate-300,
-.dark a.border-slate-200,
-.dark a.border-slate-300 {
-  background-color: #0f172a !important;
-  border-color: #334155 !important;
-  color: #e2e8f0 !important;
+.dark :is(.text-amber-700, .text-yellow-700, .text-orange-700, .text-amber-800):not([class*="dark:text-"]) {
+  color: #fbbf24;
 }
 
-.dark button.border-slate-200:hover,
-.dark button.border-slate-300:hover,
-.dark a.border-slate-200:hover,
-.dark a.border-slate-300:hover {
-  background-color: #1e293b !important;
-  border-color: #64748b !important;
-  color: #ffffff !important;
+.dark :is(.bg-green-50, .bg-emerald-50):not([class*="dark:bg-"]) {
+  background-color: rgba(16, 185, 129, 0.1);
 }
 
-/* ADDED: Fix disabled buttons like Copy Link in dark mode */
-.dark button:disabled,
-.dark a[aria-disabled="true"] {
-  background-color: #1e293b !important;
-  color: #64748b !important;
-  border-color: #334155 !important;
-  opacity: 0.7;
+.dark :is(.text-green-700, .text-emerald-700, .text-green-800, .text-emerald-800):not([class*="dark:text-"]) {
+  color: #6ee7b7;
+}
+
+.dark :is(.bg-red-50, .bg-red-100):not([class*="dark:bg-"]) {
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+.dark :is(.text-red-600, .text-red-700, .text-red-800):not([class*="dark:text-"]) {
+  color: #fca5a5;
+}
+
+.dark :is(.shadow-sm, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl) {
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+}
+
+.dark .hover\:bg-slate-50:not([class*="dark:hover:bg-"]):hover,
+.dark .hover\:bg-gray-50:not([class*="dark:hover:bg-"]):hover,
+.dark .hover\:bg-white:not([class*="dark:hover:bg-"]):hover {
+  background-color: #1e293b;
+}
+
+.dark .hover\:bg-slate-100:not([class*="dark:hover:bg-"]):hover,
+.dark .hover\:bg-gray-100:not([class*="dark:hover:bg-"]):hover {
+  background-color: #273449;
+}
+
+.dark .hover\:text-black:not([class*="dark:hover:text-"]):hover,
+.dark .group:hover .group-hover\:text-black:not([class*="dark:group-hover:text-"]) {
+  color: #fbbf24;
+}
+
+.dark .hover\:border-black:not([class*="dark:hover:border-"]):hover {
+  border-color: #f59e0b;
+}
+
+.dark .border-t-black:not([class*="dark:border-t-"]) {
+  border-top-color: #f59e0b;
+}
+
+.dark :is(button:disabled, a[aria-disabled="true"]) {
   cursor: not-allowed;
+  opacity: 0.55;
 }
 
-/* FIX: Our View / Impact Analysis card readability in dark mode */
-.dark .bg-amber-50,
-.dark .bg-yellow-50,
-.dark .bg-orange-50 {
-  background-color: #1e293b !important;
-}
-
-.dark .border-amber-200,
-.dark .border-yellow-200,
-.dark .border-orange-200 {
-  border-color: #f59e0b !important;
-}
-
-.dark .text-amber-700,
-.dark .text-yellow-700,
-.dark .text-orange-700 {
-  color: #fbbf24 !important;
-}
-
-/* FIX: Article body and Our View paragraph readability */
-.dark article p,
-.dark section p,
-.dark .prose p {
-  color: #dbeafe !important;
-}
-
-/* FIX: General muted text inside dark cards */
-.dark .text-slate-300,
-.dark .text-slate-400 {
-  color: #cbd5e1 !important;
-}
-
-/* FIX: Light cards with amber/yellow backgrounds should not keep pale text */
-.dark .bg-amber-50 p,
-.dark .bg-yellow-50 p,
-.dark .bg-orange-50 p {
-  color: #e2e8f0 !important;
-}
-
-/* FIX: Links inside dark content */
-.dark a {
-  color: inherit;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }

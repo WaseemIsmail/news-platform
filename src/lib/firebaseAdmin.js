@@ -14,7 +14,7 @@ function getCredential() {
 
   const absolutePath = path.isAbsolute(configuredPath)
     ? configuredPath
-    : path.resolve(process.cwd(), configuredPath);
+    : path.resolve(/* turbopackIgnore: true */ process.cwd(), configuredPath);
   return cert(JSON.parse(readFileSync(absolutePath, "utf8")));
 }
 

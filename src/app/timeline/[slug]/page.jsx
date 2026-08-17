@@ -45,8 +45,8 @@ export async function generateMetadata({ params }) {
     description:
       timeline.summary ||
       "Follow this story through a clear chronological timeline on Contextra.",
-    image: timeline.coverImage || "/images/default-og.jpg",
-    url: `https://contextra.vercel.app/timeline/${timeline.slug}`,
+    image: timeline.coverImage || "/opengraph-image",
+    url: `/timeline/${timeline.slug}`,
   });
 }
 

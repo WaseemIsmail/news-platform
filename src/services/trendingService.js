@@ -12,7 +12,7 @@ Trending score can be improved later using:
 - recency
 ====================================
 */
-function calculateTrendingScore(article) {
+export function calculateTrendingScore(article) {
   const views = article.views || 0;
   const reactions = article.reactionsCount || 0;
   const comments = article.commentsCount || 0;
@@ -29,11 +29,17 @@ Fetch Trending Articles
 export const fetchTrendingArticles = async () => {
   const articles = await fetchAllArticles();
 
-  const sortedArticles = [...articles].sort((a, b) => {
+  const sortedArticles = articles
+    .filter((article) => article?.status === "published" && article?.slug && article?.title)
+    .sort((a, b) => {
     const scoreA = calculateTrendingScore(a);
     const scoreB = calculateTrendingScore(b);
 
-    return scoreB - scoreA;
+    if (scoreB !== scoreA) return scoreB - scoreA;
+
+    const dateA = a.publishedAt?.seconds || a.createdAt?.seconds || 0;
+    const dateB = b.publishedAt?.seconds || b.createdAt?.seconds || 0;
+    return dateB - dateA;
   });
 
   return sortedArticles;

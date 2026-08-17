@@ -67,7 +67,7 @@ export default function SavedArticlesList({ articles = [] }) {
               {/* Image */}
               <div className="relative h-28 w-full overflow-hidden rounded-2xl sm:w-44 sm:min-w-[176px]">
                 <Image
-                  src={article.image || "/images/default-og.jpg"}
+                  src={article.image || "/opengraph-image"}
                   alt={article.title || "Saved article"}
                   fill
                   className="object-cover transition duration-500 group-hover:scale-105"

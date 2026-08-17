@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   createCommentDoc,
   deleteCommentDoc,
@@ -21,6 +21,23 @@ import CommentBox from "@/components/comments/CommentBox";
 import CommentList from "@/components/comments/CommentList";
 import { useAuthContext } from "@/context/AuthContext";
 
+function buildNestedComments(data) {
+  const visibleComments = (data || []).filter((item) => item.status !== "rejected");
+  const commentsMap = {};
+  const rootComments = [];
+
+  visibleComments.forEach((item) => {
+    commentsMap[item.id] = { ...item, replies: [] };
+  });
+
+  visibleComments.forEach((item) => {
+    if (item.parentId && commentsMap[item.parentId]) commentsMap[item.parentId].replies.push(commentsMap[item.id]);
+    else if (!item.parentId) rootComments.push(commentsMap[item.id]);
+  });
+
+  return rootComments;
+}
+
 export default function ArticleEngagementSection({ article }) {
   const { user } = useAuthContext();
 
@@ -35,39 +52,6 @@ export default function ArticleEngagementSection({ article }) {
   });
 
   const [userReaction, setUserReaction] = useState(null);
-
-  useEffect(() => {
-    if (!article?.id) return;
-
-    fetchComments();
-    fetchReactions();
-  }, [article?.id, user?.uid]);
-
-  const buildNestedComments = (data) => {
-    const visibleComments = (data || []).filter(
-      (item) => item.status !== "rejected"
-    );
-
-    const commentsMap = {};
-    const rootComments = [];
-
-    visibleComments.forEach((item) => {
-      commentsMap[item.id] = {
-        ...item,
-        replies: [],
-      };
-    });
-
-    visibleComments.forEach((item) => {
-      if (item.parentId && commentsMap[item.parentId]) {
-        commentsMap[item.parentId].replies.push(commentsMap[item.id]);
-      } else if (!item.parentId) {
-        rootComments.push(commentsMap[item.id]);
-      }
-    });
-
-    return rootComments;
-  };
 
   const updateNestedCommentLike = (
     commentList,
@@ -100,7 +84,7 @@ export default function ArticleEngagementSection({ article }) {
     });
   };
 
-  const fetchComments = async () => {
+  const fetchComments = useCallback(async () => {
     try {
       setCommentsLoading(true);
 
@@ -113,9 +97,9 @@ export default function ArticleEngagementSection({ article }) {
     } finally {
       setCommentsLoading(false);
     }
-  };
+  }, [article.id]);
 
-  const fetchReactions = async () => {
+  const fetchReactions = useCallback(async () => {
     try {
       const data = await getReactionsByArticleId(article.id);
 
@@ -143,7 +127,13 @@ export default function ArticleEngagementSection({ article }) {
     } catch (error) {
       console.error("Failed to fetch reactions:", error);
     }
-  };
+  }, [article.id, user?.uid]);
+
+  useEffect(() => {
+    if (!article?.id) return;
+    fetchComments();
+    fetchReactions();
+  }, [article?.id, fetchComments, fetchReactions]);
 
   const handleCommentSubmit = async (payload) => {
     try {
@@ -188,10 +178,7 @@ export default function ArticleEngagementSection({ article }) {
   };
 
   const handleLikeComment = async (comment) => {
-    if (!user?.uid) {
-      alert("Please login to like comments.");
-      return;
-    }
+    if (!user?.uid) return;
 
     if (!comment?.id || typeof comment.id !== "string") {
       console.error("Invalid comment object:", comment);
@@ -296,8 +283,21 @@ export default function ArticleEngagementSection({ article }) {
     )[0];
   }, [comments]);
 
+  const totalComments = useMemo(() => flattenComments(comments).length, [comments]);
+
   return (
-    <>
+    <section id="conversation" className="mt-16 scroll-mt-28 border-t border-slate-200 pt-10 dark:border-slate-800" aria-labelledby="conversation-title">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.22em] text-amber-700 dark:text-amber-400">Reader community</p>
+          <h2 id="conversation-title" className="mt-2 text-3xl font-black tracking-tight text-slate-950 dark:text-white">Join the conversation</h2>
+          <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600 dark:text-slate-300">React quickly or contribute a considered response to the reporting.</p>
+        </div>
+        <a href="#reader-comments-title" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-300 px-4 py-2 text-sm font-black text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-900">
+          Read {commentsLoading ? "comments" : `${totalComments} ${totalComments === 1 ? "comment" : "comments"}`}
+        </a>
+      </div>
+
       <ReactionBar
         articleId={article.id}
         reactionCounts={reactionCounts}
@@ -312,18 +312,19 @@ export default function ArticleEngagementSection({ article }) {
       <CommentBox articleId={article.id} onSubmit={handleCommentSubmit} />
 
       {commentsLoading ? (
-        <section className="mt-10 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-sm text-slate-600">Loading comments...</p>
+        <section className="mt-10 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <p className="text-sm text-slate-600 dark:text-slate-300">Loading comments...</p>
         </section>
       ) : (
         <CommentList
           comments={comments}
+          totalCount={totalComments}
           user={user}
           onReply={handleCommentSubmit}
           onDelete={handleDeleteComment}
           onLike={handleLikeComment}
         />
       )}
-    </>
+    </section>
   );
 }

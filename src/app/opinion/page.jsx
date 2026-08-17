@@ -11,8 +11,8 @@ export async function generateMetadata() {
     title: "Opinion | Contextra",
     description:
       "Read expert opinions, editorials, and public perspectives on politics, business, technology, and global affairs.",
-    image: "/images/default-og.jpg",
-    url: "https://contextra.vercel.app/opinion",
+    image: "/opengraph-image",
+    url: "/opinion",
   });
 }
 

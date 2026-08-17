@@ -519,7 +519,7 @@ export default function AdminCategoriesPage() {
             <p className="mt-3 text-sm leading-7 text-slate-600">
               Are you sure you want to delete{" "}
               <span className="font-semibold text-slate-900">
-                "{selectedCategory?.name}"
+                &ldquo;{selectedCategory?.name}&rdquo;
               </span>
               ? This action cannot be undone.
             </p>

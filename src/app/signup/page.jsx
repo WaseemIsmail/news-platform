@@ -1,297 +1,88 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  createUserWithEmailAndPassword,
-  updateProfile,
-  signInWithPopup,
-  GoogleAuthProvider,
-} from "firebase/auth";
-import {
-  doc,
-  setDoc,
-  serverTimestamp,
-  getDoc,
-} from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
+import { useCallback, useState } from "react";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import AuthShell from "@/components/auth/AuthShell";
+import FormStatus from "@/components/auth/FormStatus";
+import PasswordField from "@/components/auth/PasswordField";
+import { ensureReaderProfile, getGoogleAuthErrorMessage, loginWithGoogle } from "@/lib/auth";
+import { auth } from "@/lib/firebase";
+
+function getSignupError(code) {
+  if (code === "auth/email-already-in-use") return "An account already exists for this email. Try signing in instead.";
+  if (code === "auth/invalid-email") return "Enter a valid email address.";
+  if (code === "auth/weak-password") return "Choose a stronger password with at least six characters.";
+  return "We couldn’t create the account. Please try again.";
+}
 
 export default function SignupPage() {
   const router = useRouter();
-
-  const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-  });
-
-  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({ fullName: "", email: "", password: "", confirmPassword: "" });
+  const [loading, setLoading] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const provider = new GoogleAuthProvider();
-
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  const saveUserToFirestore = async (user, fullName = "") => {
-    const userRef = doc(db, "users", user.uid);
-    const existingUser = await getDoc(userRef);
-
-    if (!existingUser.exists()) {
-      await setDoc(userRef, {
-        uid: user.uid,
-        fullName: fullName || user.displayName || "",
-        email: user.email || "",
-        photoURL: user.photoURL || "",
-        role: "reader",
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
+  const completeSignup = useCallback(async (user, fullName = "") => {
+    try {
+      await ensureReaderProfile(user, fullName);
+    } catch (profileError) {
+      console.error("Reader profile creation failed after sign-up:", profileError);
     }
-  };
 
-  const handleEmailSignup = async (e) => {
-    e.preventDefault();
+    setSuccess("Your account is ready. Opening your profile…");
+    window.setTimeout(() => router.replace("/profile"), 500);
+  }, [router]);
 
+  const handleEmailSignup = async (event) => {
+    event.preventDefault();
     setError("");
     setSuccess("");
+    if (formData.password.length < 6) return setError("Use at least six characters for your password.");
+    if (formData.password !== formData.confirmPassword) return setError("The two passwords do not match.");
 
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
-
-    if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters.");
-      return;
-    }
-
+    setLoading("email");
     try {
-      setLoading(true);
-
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        formData.email.trim(),
-        formData.password
-      );
-
-      await updateProfile(userCredential.user, {
-        displayName: formData.fullName.trim(),
-      });
-
-      await saveUserToFirestore(
-        userCredential.user,
-        formData.fullName.trim()
-      );
-
-      setSuccess("Account created successfully!");
-
-      setTimeout(() => {
-        router.push("/profile");
-      }, 1200);
-    } catch (err) {
-      console.error(err);
-
-      let message = "Signup failed. Please try again.";
-
-      if (err.code === "auth/email-already-in-use") {
-        message = "This email is already registered.";
-      } else if (err.code === "auth/invalid-email") {
-        message = "Please enter a valid email address.";
-      } else if (err.code === "auth/weak-password") {
-        message = "Password should be at least 6 characters.";
-      }
-
-      setError(message);
+      const credential = await createUserWithEmailAndPassword(auth, formData.email.trim(), formData.password);
+      await updateProfile(credential.user, { displayName: formData.fullName.trim() });
+      await completeSignup(credential.user, formData.fullName.trim());
+    } catch (signupError) {
+      setError(getSignupError(signupError.code));
     } finally {
-      setLoading(false);
+      setLoading("");
     }
   };
 
   const handleGoogleSignup = async () => {
+    setError("");
+    setSuccess("");
+    setLoading("google");
     try {
-      setLoading(true);
-      setError("");
-      setSuccess("");
-
-      const result = await signInWithPopup(auth, provider);
-
-      await saveUserToFirestore(result.user);
-
-      setSuccess("Google signup successful!");
-
-      setTimeout(() => {
-        router.push("/profile");
-      }, 1000);
-    } catch (err) {
-      console.error(err);
-
-      let message = "Google signup failed.";
-
-      if (err.code === "auth/popup-closed-by-user") {
-        message = "Google popup was closed before completing signup.";
-      }
-
-      setError(message);
+      const user = await loginWithGoogle();
+      if (user) await completeSignup(user);
+    } catch (signupError) {
+      setError(getGoogleAuthErrorMessage(signupError, "create your account"));
     } finally {
-      setLoading(false);
+      setLoading("");
     }
   };
 
+  const updateField = (field) => (event) => setFormData((current) => ({ ...current, [field]: event.target.value }));
+  const passwordsMatch = formData.confirmPassword.length > 0 && formData.password === formData.confirmPassword;
+
   return (
-    <main className="min-h-screen bg-white">
-      <section className="flex min-h-screen items-center justify-center px-6 py-16">
-        <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-          {/* Header */}
-          <div className="text-center">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-700">
-              Join Contextra
-            </p>
-
-            <h1 className="mt-3 text-3xl font-bold text-slate-900">
-              Create Your Account
-            </h1>
-
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              Save articles, join discussions, and personalize your reading
-              experience.
-            </p>
-          </div>
-
-          {/* Success */}
-          {success && (
-            <div className="mt-6 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-              {success}
-            </div>
-          )}
-
-          {/* Error */}
-          {error && (
-            <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {error}
-            </div>
-          )}
-
-          {/* Form */}
-          <form onSubmit={handleEmailSignup} className="mt-8 space-y-5">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">
-                Full Name
-              </label>
-
-              <input
-                type="text"
-                name="fullName"
-                value={formData.fullName}
-                onChange={handleChange}
-                required
-                placeholder="Enter your full name"
-                className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">
-                Email Address
-              </label>
-
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                required
-                placeholder="Enter your email"
-                className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">
-                Password
-              </label>
-
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                placeholder="Create password"
-                className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">
-                Confirm Password
-              </label>
-
-              <input
-                type="password"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                required
-                placeholder="Confirm password"
-                className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-2xl bg-slate-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {loading ? "Creating Account..." : "Sign Up"}
-            </button>
-          </form>
-
-          {/* Divider */}
-          <div className="my-6 flex items-center gap-3">
-            <div className="h-px flex-1 bg-slate-200" />
-            <span className="text-xs text-slate-400">OR</span>
-            <div className="h-px flex-1 bg-slate-200" />
-          </div>
-
-          {/* Google Signup */}
-          <button
-            onClick={handleGoogleSignup}
-            disabled={loading}
-            className="w-full rounded-2xl border border-slate-300 px-5 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
-          >
-            Continue with Google
-          </button>
-
-          {/* Footer */}
-          <div className="mt-8 text-center text-sm text-slate-600">
-            Already have an account?{" "}
-            <Link
-              href="/login"
-              className="font-medium text-slate-900 hover:text-amber-700"
-            >
-              Login
-            </Link>
-          </div>
-
-          <div className="mt-3 text-center text-sm text-slate-600">
-            Forgot your password?{" "}
-            <Link
-              href="/forgot-password"
-              className="font-medium text-slate-900 hover:text-amber-700"
-            >
-              Reset here
-            </Link>
-          </div>
-        </div>
-      </section>
-    </main>
+    <AuthShell eyebrow="Join Contextra" title="Create your reader account" description="Save reporting, take part in discussions, and keep your news experience organised." footer={<>Already have an account? <Link href="/login" className="font-bold text-slate-950 hover:text-amber-700 dark:text-white dark:hover:text-amber-400">Sign in</Link></>}>
+      <FormStatus error={error} success={success} />
+      <form onSubmit={handleEmailSignup} className="space-y-5">
+        <div><label htmlFor="signup-name" className="mb-2 block text-sm font-bold text-slate-700 dark:text-slate-200">Full name</label><input id="signup-name" type="text" value={formData.fullName} onChange={updateField("fullName")} required autoComplete="name" placeholder="How should we address you?" className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 dark:border-slate-700 dark:bg-slate-950" /></div>
+        <div><label htmlFor="signup-email" className="mb-2 block text-sm font-bold text-slate-700 dark:text-slate-200">Email address</label><input id="signup-email" type="email" value={formData.email} onChange={updateField("email")} required autoComplete="email" inputMode="email" placeholder="you@example.com" className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 dark:border-slate-700 dark:bg-slate-950" /></div>
+        <PasswordField label="Password" hint="6+ characters" id="signup-password" value={formData.password} onChange={updateField("password")} required minLength={6} autoComplete="new-password" placeholder="Create a password" />
+        <PasswordField label="Confirm password" hint={passwordsMatch ? "Passwords match" : "Enter it again"} id="signup-confirm-password" value={formData.confirmPassword} onChange={updateField("confirmPassword")} required minLength={6} autoComplete="new-password" placeholder="Repeat your password" />
+        <button type="submit" disabled={Boolean(loading)} className="w-full rounded-xl bg-slate-950 px-5 py-3.5 text-sm font-bold text-white transition hover:bg-amber-600 disabled:cursor-wait disabled:opacity-60 dark:bg-amber-400 dark:text-slate-950 dark:hover:bg-amber-300">{loading === "email" ? "Creating account…" : "Create account"}</button>
+      </form>
+      <div className="my-6 flex items-center gap-3"><div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" /><span className="text-xs font-semibold uppercase tracking-wide text-slate-400">or</span><div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" /></div>
+      <button type="button" onClick={handleGoogleSignup} disabled={Boolean(loading)} className="w-full rounded-xl border border-slate-300 px-5 py-3.5 text-sm font-bold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 disabled:cursor-wait disabled:opacity-60 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">{loading === "google" ? "Connecting to Google…" : "Continue with Google"}</button>
+    </AuthShell>
   );
 }

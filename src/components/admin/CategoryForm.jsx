@@ -13,13 +13,16 @@ export default function CategoryForm({
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (initialData) {
-      setName(initialData.name || "");
-      setSlug(initialData.slug || "");
-    } else {
-      setName("");
-      setSlug("");
-    }
+    const frame = window.requestAnimationFrame(() => {
+      if (initialData) {
+        setName(initialData.name || "");
+        setSlug(initialData.slug || "");
+      } else {
+        setName("");
+        setSlug("");
+      }
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [initialData]);
 
   const generateSlug = (value) => {

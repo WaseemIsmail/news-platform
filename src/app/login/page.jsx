@@ -1,247 +1,84 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  signInWithEmailAndPassword,
-  signInWithPopup,
-  GoogleAuthProvider,
-} from "firebase/auth";
-import {
-  doc,
-  getDoc,
-  setDoc,
-  serverTimestamp,
-} from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
+import { useCallback, useState } from "react";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import AuthShell from "@/components/auth/AuthShell";
+import FormStatus from "@/components/auth/FormStatus";
+import PasswordField from "@/components/auth/PasswordField";
+import { ensureReaderProfile, getGoogleAuthErrorMessage, loginWithGoogle } from "@/lib/auth";
+import { auth } from "@/lib/firebase";
+
+function getLoginError(code) {
+  if (code === "auth/invalid-email") return "Enter a valid email address.";
+  if (code === "auth/too-many-requests") return "Too many attempts. Wait a moment before trying again.";
+  return "The email or password is incorrect.";
+}
 
 export default function LoginPage() {
   const router = useRouter();
-
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
-
-  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [loading, setLoading] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const provider = new GoogleAuthProvider();
-
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  const ensureUserExists = async (user) => {
-    const userRef = doc(db, "users", user.uid);
-    const existingUser = await getDoc(userRef);
-
-    if (!existingUser.exists()) {
-      await setDoc(userRef, {
-        uid: user.uid,
-        fullName: user.displayName || "",
-        email: user.email || "",
-        photoURL: user.photoURL || "",
-        role: "reader",
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
+  const finishLogin = useCallback(async (user) => {
+    try {
+      await ensureReaderProfile(user);
+    } catch (profileError) {
+      console.error("Reader profile creation failed after sign-in:", profileError);
     }
-  };
 
-  const handleEmailLogin = async (e) => {
-    e.preventDefault();
+    setSuccess("You’re signed in. Opening your profile…");
+    window.setTimeout(() => router.replace("/profile"), 500);
+  }, [router]);
 
+  const handleEmailLogin = async (event) => {
+    event.preventDefault();
     setError("");
     setSuccess("");
-
+    setLoading("email");
     try {
-      setLoading(true);
-
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        formData.email.trim(),
-        formData.password
-      );
-
-      await ensureUserExists(userCredential.user);
-
-      setSuccess("Login successful!");
-
-      setTimeout(() => {
-        router.push("/profile");
-      }, 1000);
-    } catch (err) {
-      console.error(err);
-
-      let message = "Invalid email or password.";
-
-      if (err.code === "auth/user-not-found") {
-        message = "No account found with this email.";
-      } else if (err.code === "auth/wrong-password") {
-        message = "Incorrect password.";
-      } else if (err.code === "auth/invalid-email") {
-        message = "Please enter a valid email address.";
-      } else if (err.code === "auth/too-many-requests") {
-        message =
-          "Too many failed attempts. Please try again later.";
-      }
-
-      setError(message);
+      const credential = await signInWithEmailAndPassword(auth, formData.email.trim(), formData.password);
+      await finishLogin(credential.user);
+    } catch (loginError) {
+      setError(getLoginError(loginError.code));
     } finally {
-      setLoading(false);
+      setLoading("");
     }
   };
 
   const handleGoogleLogin = async () => {
+    setError("");
+    setSuccess("");
+    setLoading("google");
     try {
-      setLoading(true);
-      setError("");
-      setSuccess("");
-
-      const result = await signInWithPopup(auth, provider);
-
-      await ensureUserExists(result.user);
-
-      setSuccess("Google login successful!");
-
-      setTimeout(() => {
-        router.push("/profile");
-      }, 1000);
-    } catch (err) {
-      console.error(err);
-
-      let message = "Google login failed.";
-
-      if (err.code === "auth/popup-closed-by-user") {
-        message =
-          "Google popup was closed before completing login.";
-      }
-
-      setError(message);
+      const user = await loginWithGoogle();
+      if (user) await finishLogin(user);
+    } catch (loginError) {
+      setError(getGoogleAuthErrorMessage(loginError, "sign in"));
     } finally {
-      setLoading(false);
+      setLoading("");
     }
   };
 
   return (
-    <main className="min-h-screen bg-white">
-      <section className="flex min-h-screen items-center justify-center px-6 py-16">
-        <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-          {/* Header */}
-          <div className="text-center">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-700">
-              Welcome Back
-            </p>
-
-            <h1 className="mt-3 text-3xl font-bold text-slate-900">
-              Login to Contextra
-            </h1>
-
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              Access your saved articles, bookmarks, comments, and profile.
-            </p>
-          </div>
-
-          {/* Success */}
-          {success && (
-            <div className="mt-6 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-              {success}
-            </div>
-          )}
-
-          {/* Error */}
-          {error && (
-            <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {error}
-            </div>
-          )}
-
-          {/* Form */}
-          <form onSubmit={handleEmailLogin} className="mt-8 space-y-5">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">
-                Email Address
-              </label>
-
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                required
-                placeholder="Enter your email"
-                className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900"
-              />
-            </div>
-
-            <div>
-              <div className="mb-2 flex items-center justify-between">
-                <label className="block text-sm font-medium text-slate-700">
-                  Password
-                </label>
-
-                <Link
-                  href="/forgot-password"
-                  className="text-sm font-medium text-slate-900 hover:text-amber-700"
-                >
-                  Forgot password?
-                </Link>
-              </div>
-
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                placeholder="Enter your password"
-                className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-900"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-2xl bg-slate-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {loading ? "Logging in..." : "Login"}
-            </button>
-          </form>
-
-          {/* Divider */}
-          <div className="my-6 flex items-center gap-3">
-            <div className="h-px flex-1 bg-slate-200" />
-            <span className="text-xs text-slate-400">OR</span>
-            <div className="h-px flex-1 bg-slate-200" />
-          </div>
-
-          {/* Google Login */}
-          <button
-            onClick={handleGoogleLogin}
-            disabled={loading}
-            className="w-full rounded-2xl border border-slate-300 px-5 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
-          >
-            Continue with Google
-          </button>
-
-          {/* Footer */}
-          <div className="mt-8 text-center text-sm text-slate-600">
-            Don’t have an account?{" "}
-            <Link
-              href="/signup"
-              className="font-medium text-slate-900 hover:text-amber-700"
-            >
-              Sign Up
-            </Link>
-          </div>
+    <AuthShell eyebrow="Welcome back" title="Sign in to your reading space" description="Continue with saved stories, discussions, notifications, and your personal account." footer={<>New to Contextra? <Link href="/signup" className="font-bold text-slate-950 hover:text-amber-700 dark:text-white dark:hover:text-amber-400">Create an account</Link></>}>
+      <FormStatus error={error} success={success} />
+      <form onSubmit={handleEmailLogin} className="space-y-5">
+        <div>
+          <label htmlFor="login-email" className="mb-2 block text-sm font-bold text-slate-700 dark:text-slate-200">Email address</label>
+          <input id="login-email" type="email" name="email" value={formData.email} onChange={(event) => setFormData((current) => ({ ...current, email: event.target.value }))} required autoComplete="email" inputMode="email" placeholder="you@example.com" className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
         </div>
-      </section>
-    </main>
+        <div>
+          <div className="mb-2 text-right"><Link href="/forgot-password" className="text-xs font-bold text-amber-700 hover:underline dark:text-amber-400">Forgot password?</Link></div>
+          <PasswordField label="Password" id="login-password" name="password" value={formData.password} onChange={(event) => setFormData((current) => ({ ...current, password: event.target.value }))} required autoComplete="current-password" placeholder="Enter your password" />
+        </div>
+        <button type="submit" disabled={Boolean(loading)} className="w-full rounded-xl bg-slate-950 px-5 py-3.5 text-sm font-bold text-white transition hover:bg-amber-600 disabled:cursor-wait disabled:opacity-60 dark:bg-amber-400 dark:text-slate-950 dark:hover:bg-amber-300">{loading === "email" ? "Signing in…" : "Sign in"}</button>
+      </form>
+      <div className="my-6 flex items-center gap-3"><div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" /><span className="text-xs font-semibold uppercase tracking-wide text-slate-400">or</span><div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" /></div>
+      <button type="button" onClick={handleGoogleLogin} disabled={Boolean(loading)} className="w-full rounded-xl border border-slate-300 px-5 py-3.5 text-sm font-bold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 disabled:cursor-wait disabled:opacity-60 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">{loading === "google" ? "Connecting to Google…" : "Continue with Google"}</button>
+    </AuthShell>
   );
 }

@@ -1,216 +1,58 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
 import { confirmPasswordReset } from "firebase/auth";
-import { useSearchParams, useRouter } from "next/navigation";
+import AuthShell from "@/components/auth/AuthShell";
+import FormStatus from "@/components/auth/FormStatus";
+import PasswordField from "@/components/auth/PasswordField";
 import { auth } from "@/lib/firebase";
 
 export default function ResetPasswordPage() {
-  const searchParams = useSearchParams();
   const router = useRouter();
-
+  const searchParams = useSearchParams();
   const oobCode = searchParams.get("oobCode");
-
-  const [formData, setFormData] = useState({
-    newPassword: "",
-    confirmPassword: "",
-  });
-
+  const [formData, setFormData] = useState({ newPassword: "", confirmPassword: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  const handleResetPassword = async (e) => {
-    e.preventDefault();
-
+  const handleResetPassword = async (event) => {
+    event.preventDefault();
     setError("");
     setSuccess("");
 
-    if (!oobCode) {
-      setError("Invalid or expired password reset link.");
-      return;
-    }
+    if (!oobCode) return setError("This reset link is incomplete or invalid. Request a new one below.");
+    if (formData.newPassword.length < 6) return setError("Use at least six characters for your new password.");
+    if (formData.newPassword !== formData.confirmPassword) return setError("The two passwords do not match.");
 
-    if (formData.newPassword !== formData.confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
-
-    if (formData.newPassword.length < 6) {
-      setError("Password must be at least 6 characters.");
-      return;
-    }
-
+    setLoading(true);
     try {
-      setLoading(true);
-
-      await confirmPasswordReset(
-        auth,
-        oobCode,
-        formData.newPassword
-      );
-
-      setSuccess("Password has been reset successfully!");
-
-      setTimeout(() => {
-        router.push("/login");
-      }, 1500);
-    } catch (err) {
-      console.error(err);
-
-      let message = "Failed to reset password.";
-
-      if (err.code === "auth/expired-action-code") {
-        message = "This reset link has expired.";
-      } else if (err.code === "auth/invalid-action-code") {
-        message = "Invalid reset link.";
-      } else if (err.code === "auth/weak-password") {
-        message = "Password is too weak.";
-      }
-
-      setError(message);
+      await confirmPasswordReset(auth, oobCode, formData.newPassword);
+      setSuccess("Your password has been updated. Taking you to sign in…");
+      window.setTimeout(() => router.replace("/login"), 700);
+    } catch (resetError) {
+      if (resetError.code === "auth/expired-action-code") setError("This reset link has expired. Request a new link to continue.");
+      else if (resetError.code === "auth/invalid-action-code") setError("This reset link is invalid or has already been used.");
+      else if (resetError.code === "auth/weak-password") setError("Choose a stronger password with at least six characters.");
+      else setError("We couldn’t reset the password. Please request a new link and try again.");
     } finally {
       setLoading(false);
     }
   };
 
+  const updateField = (field) => (event) => setFormData((current) => ({ ...current, [field]: event.target.value }));
+  const passwordsMatch = formData.confirmPassword.length > 0 && formData.newPassword === formData.confirmPassword;
+
   return (
-    <main className="min-h-screen bg-white">
-      <section className="mx-auto flex min-h-screen max-w-7xl items-center px-4 py-16">
-        <div className="grid w-full items-center gap-10 lg:grid-cols-2">
-          {/* Left Side */}
-          <div className="hidden lg:block">
-            <div className="max-w-xl">
-              <p className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-gray-500">
-                Secure Password Reset
-              </p>
-
-              <h1 className="text-4xl font-bold tracking-tight text-gray-900 xl:text-5xl">
-                Create your new password for Contextra.
-              </h1>
-
-              <p className="mt-5 text-lg leading-8 text-gray-600">
-                Choose a strong password to keep your account secure and
-                continue reading, saving articles, and following the stories
-                that matter most to you.
-              </p>
-
-              <div className="mt-8 space-y-4 text-sm text-gray-600">
-                <div className="rounded-2xl border border-gray-200 p-4">
-                  Secure reset powered by Firebase Authentication
-                </div>
-
-                <div className="rounded-2xl border border-gray-200 p-4">
-                  Fast recovery for your profile and saved content
-                </div>
-
-                <div className="rounded-2xl border border-gray-200 p-4">
-                  Seamless Contextra account security flow
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Side */}
-          <div className="mx-auto w-full max-w-md">
-            <div className="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm md:p-10">
-              <div className="mb-8 text-center">
-                <Link
-                  href="/"
-                  className="text-2xl font-bold tracking-tight text-gray-900"
-                >
-                  Contextra
-                </Link>
-
-                <h2 className="mt-4 text-3xl font-bold text-gray-900">
-                  Reset Password
-                </h2>
-
-                <p className="mt-2 text-sm leading-6 text-gray-600">
-                  Set a new password for your account.
-                </p>
-              </div>
-
-              {/* Success */}
-              {success && (
-                <div className="mb-5 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-                  {success}
-                </div>
-              )}
-
-              {/* Error */}
-              {error && (
-                <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                  {error}
-                </div>
-              )}
-
-              <form
-                onSubmit={handleResetPassword}
-                className="space-y-5"
-              >
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700">
-                    New Password
-                  </label>
-
-                  <input
-                    type="password"
-                    name="newPassword"
-                    value={formData.newPassword}
-                    onChange={handleChange}
-                    required
-                    placeholder="Enter new password"
-                    className="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-black"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700">
-                    Confirm Password
-                  </label>
-
-                  <input
-                    type="password"
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    required
-                    placeholder="Confirm new password"
-                    className="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-black"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full rounded-2xl bg-black px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {loading ? "Resetting Password..." : "Reset Password"}
-                </button>
-              </form>
-
-              <div className="mt-6 text-center text-sm text-gray-600">
-                Back to{" "}
-                <Link
-                  href="/login"
-                  className="font-semibold text-black hover:underline"
-                >
-                  Login
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-    </main>
+    <AuthShell eyebrow="Secure password reset" title="Choose a new password" description="Create a password you do not use elsewhere. Your saved stories and account details will remain unchanged." footer={<>Need a fresh link? <Link href="/forgot-password" className="font-bold text-slate-950 hover:text-amber-700 dark:text-white dark:hover:text-amber-400">Request another reset email</Link></>}>
+      <FormStatus error={error || (!oobCode ? "This page needs a valid reset link from your email." : "")} success={success} />
+      <form onSubmit={handleResetPassword} className="space-y-5">
+        <PasswordField label="New password" hint="6+ characters" id="new-password" value={formData.newPassword} onChange={updateField("newPassword")} required minLength={6} autoComplete="new-password" placeholder="Create a new password" />
+        <PasswordField label="Confirm new password" hint={passwordsMatch ? "Passwords match" : "Enter it again"} id="confirm-new-password" value={formData.confirmPassword} onChange={updateField("confirmPassword")} required minLength={6} autoComplete="new-password" placeholder="Repeat the new password" />
+        <button type="submit" disabled={loading || !oobCode} className="w-full rounded-xl bg-slate-950 px-5 py-3.5 text-sm font-bold text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-amber-400 dark:text-slate-950 dark:hover:bg-amber-300">{loading ? "Updating password…" : "Update password"}</button>
+      </form>
+    </AuthShell>
   );
 }

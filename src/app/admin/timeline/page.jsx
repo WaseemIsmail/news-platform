@@ -432,7 +432,7 @@ export default function AdminTimelinePage() {
 
               <input
                 type="text"
-                placeholder="/images/default-og.jpg or https://example.com/image.jpg"
+                placeholder="/opengraph-image or https://example.com/image.jpg"
                 value={coverImage}
                 onChange={(e) => setCoverImage(e.target.value)}
                 className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
@@ -718,7 +718,7 @@ export default function AdminTimelinePage() {
             <p className="mt-3 text-sm leading-7 text-slate-600">
               Are you sure you want to delete{" "}
               <span className="font-semibold text-slate-900">
-                "{selectedTimeline?.title}"
+                &ldquo;{selectedTimeline?.title}&rdquo;
               </span>
               ? This action cannot be undone.
             </p>

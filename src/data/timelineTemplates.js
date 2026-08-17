@@ -6,7 +6,7 @@ const timelineTemplates = [
     category: "Politics",
     description:
       "A structured timeline template for elections, leadership changes, protests, policy decisions, and constitutional developments.",
-    coverImage: "/images/default-og.jpg",
+    coverImage: "/opengraph-image",
     status: "active",
     fields: {
       title: "Election Timeline 2026",
@@ -65,7 +65,7 @@ const timelineTemplates = [
     category: "Business",
     description:
       "A clean timeline for company launches, mergers, earnings announcements, restructures, and major strategy shifts.",
-    coverImage: "/images/default-og.jpg",
+    coverImage: "/opengraph-image",
     status: "active",
     fields: {
       title: "Company Growth Timeline",
@@ -124,7 +124,7 @@ const timelineTemplates = [
     category: "Technology",
     description:
       "Useful for product rollouts, software releases, AI model launches, hardware announcements, and major upgrades.",
-    coverImage: "/images/default-og.jpg",
+    coverImage: "/opengraph-image",
     status: "active",
     fields: {
       title: "Product Launch Timeline",
@@ -183,7 +183,7 @@ const timelineTemplates = [
     category: "World",
     description:
       "Designed for investigations, conflicts, legal cases, and crisis reporting where chronology is central to understanding events.",
-    coverImage: "/images/default-og.jpg",
+    coverImage: "/opengraph-image",
     status: "active",
     fields: {
       title: "Investigation Timeline",

@@ -7,8 +7,8 @@ export async function generateMetadata() {
     title: "Browse Tags | Contextra",
     description:
       "Explore all news topics, trending discussions, and editorial perspectives through tags on Contextra.",
-    image: "/images/default-og.jpg",
-    url: "https://contextra.vercel.app/tag",
+    image: "/opengraph-image",
+    url: "/tag",
   });
 }
 

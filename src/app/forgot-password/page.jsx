@@ -1,163 +1,46 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
+import { useState } from "react";
 import { sendPasswordResetEmail } from "firebase/auth";
+import AuthShell from "@/components/auth/AuthShell";
+import FormStatus from "@/components/auth/FormStatus";
 import { auth } from "@/lib/firebase";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
-  const [status, setStatus] = useState({
-    loading: false,
-    success: "",
-    error: "",
-  });
+  const [status, setStatus] = useState({ loading: false, success: "", error: "" });
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    setStatus({
-      loading: true,
-      success: "",
-      error: "",
-    });
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setStatus({ loading: true, success: "", error: "" });
 
     try {
       await sendPasswordResetEmail(auth, email.trim());
-
-      setStatus({
-        loading: false,
-        success: "A password reset link has been sent to your email.",
-        error: "",
-      });
-
+      setStatus({ loading: false, success: "If an account exists for that email, a secure reset link is on its way. Check your inbox and spam folder.", error: "" });
       setEmail("");
-    } catch (error) {
-      let message = "Something went wrong. Please try again.";
-
-      if (error.code === "auth/user-not-found") {
-        message = "No account was found with that email address.";
-      } else if (error.code === "auth/invalid-email") {
-        message = "Please enter a valid email address.";
-      } else if (error.code === "auth/too-many-requests") {
-        message =
-          "Too many attempts detected. Please wait a bit and try again.";
+    } catch (resetError) {
+      if (resetError.code === "auth/invalid-email") {
+        setStatus({ loading: false, success: "", error: "Enter a valid email address." });
+      } else if (resetError.code === "auth/too-many-requests") {
+        setStatus({ loading: false, success: "", error: "Too many attempts. Wait a moment before requesting another link." });
+      } else {
+        setStatus({ loading: false, success: "", error: "We couldn’t send the reset email. Please try again." });
       }
-
-      setStatus({
-        loading: false,
-        success: "",
-        error: message,
-      });
     }
   };
 
   return (
-    <main className="min-h-screen bg-white">
-      <section className="mx-auto flex min-h-screen max-w-7xl items-center px-4 py-16">
-        <div className="grid w-full items-center gap-10 lg:grid-cols-2">
-          <div className="hidden lg:block">
-            <div className="max-w-xl">
-              <p className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-gray-500">
-                Account Recovery
-              </p>
-              <h1 className="text-4xl font-bold tracking-tight text-gray-900 xl:text-5xl">
-                Reset your password and get back to Contextra.
-              </h1>
-              <p className="mt-5 text-lg leading-8 text-gray-600">
-                Enter the email linked to your account and we’ll send you a
-                secure password reset link so you can continue reading,
-                bookmarking, and following the stories that matter to you.
-              </p>
-
-              <div className="mt-8 space-y-4 text-sm text-gray-600">
-                <div className="rounded-2xl border border-gray-200 p-4">
-                  Secure password reset via Firebase Authentication
-                </div>
-                <div className="rounded-2xl border border-gray-200 p-4">
-                  Fast access back to your profile, bookmarks, and notifications
-                </div>
-                <div className="rounded-2xl border border-gray-200 p-4">
-                  Clean, minimal Contextra account recovery flow
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="mx-auto w-full max-w-md">
-            <div className="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm md:p-10">
-              <div className="mb-8 text-center">
-                <Link
-                  href="/"
-                  className="text-2xl font-bold tracking-tight text-gray-900"
-                >
-                  Contextra
-                </Link>
-                <h2 className="mt-4 text-3xl font-bold text-gray-900">
-                  Forgot Password
-                </h2>
-                <p className="mt-2 text-sm leading-6 text-gray-600">
-                  We’ll email you a link to reset your password.
-                </p>
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div>
-                  <label
-                    htmlFor="email"
-                    className="mb-2 block text-sm font-medium text-gray-700"
-                  >
-                    Email address
-                  </label>
-                  <input
-                    id="email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-black"
-                  />
-                </div>
-
-                {status.success && (
-                  <div className="rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-                    {status.success}
-                  </div>
-                )}
-
-                {status.error && (
-                  <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                    {status.error}
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={status.loading}
-                  className="w-full rounded-2xl bg-black px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {status.loading ? "Sending reset link..." : "Send Reset Link"}
-                </button>
-              </form>
-
-              <div className="mt-6 text-center text-sm text-gray-600">
-                Remembered your password?{" "}
-                <Link href="/login" className="font-semibold text-black hover:underline">
-                  Back to Login
-                </Link>
-              </div>
-
-              <div className="mt-3 text-center text-sm text-gray-600">
-                Don’t have an account?{" "}
-                <Link href="/signup" className="font-semibold text-black hover:underline">
-                  Create one
-                </Link>
-              </div>
-            </div>
-          </div>
+    <AuthShell eyebrow="Account recovery" title="Reset your password" description="Enter the email connected to your account. We’ll send a secure link that lets you choose a new password." footer={<>Remembered your password? <Link href="/login" className="font-bold text-slate-950 hover:text-amber-700 dark:text-white dark:hover:text-amber-400">Return to sign in</Link></>}>
+      <FormStatus error={status.error} success={status.success} />
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div>
+          <label htmlFor="recovery-email" className="mb-2 block text-sm font-bold text-slate-700 dark:text-slate-200">Email address</label>
+          <input id="recovery-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" inputMode="email" placeholder="you@example.com" className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 dark:border-slate-700 dark:bg-slate-950" />
         </div>
-      </section>
-    </main>
+        <button type="submit" disabled={status.loading} className="w-full rounded-xl bg-slate-950 px-5 py-3.5 text-sm font-bold text-white transition hover:bg-amber-600 disabled:cursor-wait disabled:opacity-60 dark:bg-amber-400 dark:text-slate-950 dark:hover:bg-amber-300">{status.loading ? "Sending secure link…" : "Send reset link"}</button>
+      </form>
+      <div className="mt-5 rounded-2xl bg-slate-50 p-4 text-xs leading-5 text-slate-600 dark:bg-slate-950 dark:text-slate-400">For your privacy, Contextra does not confirm whether an email is registered. Reset links expire and can only be used once.</div>
+    </AuthShell>
   );
 }

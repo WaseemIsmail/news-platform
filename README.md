@@ -34,3 +34,17 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Search discovery after publishing
+
+Published articles are automatically included in:
+
+- `/latest`
+- `/sitemap.xml`
+- `/news-sitemap.xml` for the first 48 hours
+- `/feed.xml`
+- article, category, and tag pages submitted through IndexNow when configured
+
+To enable IndexNow on Netlify, add an environment variable named `INDEXNOW_KEY` with a random 8–128 character value containing only letters, numbers, and hyphens, then redeploy. The application exposes that value at `/indexnow-key.txt` as required by the protocol and submits changed article/listing URLs after a successful publication.
+
+`INDEXNOW_KEY` must be separate from `NEWS_AUTOMATION_API_KEY`. The automation API key is private; the IndexNow verification key is intentionally public through the verification route.

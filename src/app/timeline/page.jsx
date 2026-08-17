@@ -10,8 +10,8 @@ export async function generateMetadata() {
     title: "Timelines | Contextra",
     description:
       "Explore chronological timelines of major news stories, events, investigations, and public developments.",
-    image: "/images/default-og.jpg",
-    url: "https://contextra.vercel.app/timeline",
+    image: "/opengraph-image",
+    url: "/timeline",
   });
 }
 

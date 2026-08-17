@@ -389,7 +389,7 @@ export default function AdminUsersPage() {
               Are you sure you want to delete
               <span className="font-semibold text-slate-900">
                 {" "}
-                "{selectedUser?.fullName || selectedUser?.email}"
+                &ldquo;{selectedUser?.fullName || selectedUser?.email}&rdquo;
               </span>
               ? This action cannot be undone.
             </p>

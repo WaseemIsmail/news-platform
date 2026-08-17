@@ -2,6 +2,7 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -31,19 +32,9 @@ export function NotificationProvider({ children }) {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (authLoading) return;
+  const fetchNotifications = useCallback(async () => {
+    if (!user?.uid) return;
 
-    if (!user?.uid) {
-      setNotifications([]);
-      setLoading(false);
-      return;
-    }
-
-    fetchNotifications();
-  }, [user?.uid, authLoading]);
-
-  const fetchNotifications = async () => {
     try {
       setLoading(true);
 
@@ -58,6 +49,7 @@ export function NotificationProvider({ children }) {
       const data = snapshot.docs.map((item) => ({
         id: item.id,
         ...item.data(),
+        read: Boolean(item.data().read ?? item.data().isRead),
       }));
 
       setNotifications(data);
@@ -66,7 +58,22 @@ export function NotificationProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.uid]);
+
+  useEffect(() => {
+    if (authLoading) return undefined;
+
+    if (!user?.uid) {
+      const frame = window.requestAnimationFrame(() => {
+        setNotifications([]);
+        setLoading(false);
+      });
+      return () => window.cancelAnimationFrame(frame);
+    }
+
+    fetchNotifications();
+    return undefined;
+  }, [user?.uid, authLoading, fetchNotifications]);
 
   const addNotification = async ({
     title,
@@ -84,6 +91,7 @@ export function NotificationProvider({ children }) {
         type,
         href,
         read: false,
+        isRead: false,
         createdAt: serverTimestamp(),
       };
 
@@ -112,6 +120,7 @@ export function NotificationProvider({ children }) {
         doc(db, "notifications", notificationId),
         {
           read: true,
+          isRead: true,
           updatedAt: serverTimestamp(),
         }
       );
@@ -119,7 +128,7 @@ export function NotificationProvider({ children }) {
       setNotifications((prev) =>
         prev.map((item) =>
           item.id === notificationId
-            ? { ...item, read: true }
+            ? { ...item, read: true, isRead: true }
             : item
         )
       );
@@ -131,13 +140,14 @@ export function NotificationProvider({ children }) {
   const markAllAsRead = async () => {
     try {
       const unreadNotifications = notifications.filter(
-        (item) => !item.read
+        (item) => !(item.read ?? item.isRead)
       );
 
       await Promise.all(
         unreadNotifications.map((item) =>
           updateDoc(doc(db, "notifications", item.id), {
             read: true,
+            isRead: true,
             updatedAt: serverTimestamp(),
           })
         )
@@ -147,6 +157,7 @@ export function NotificationProvider({ children }) {
         prev.map((item) => ({
           ...item,
           read: true,
+          isRead: true,
         }))
       );
     } catch (error) {
@@ -185,7 +196,7 @@ export function NotificationProvider({ children }) {
   };
 
   const unreadCount = useMemo(() => {
-    return notifications.filter((item) => !item.read).length;
+    return notifications.filter((item) => !(item.read ?? item.isRead)).length;
   }, [notifications]);
 
   const value = {

@@ -18,23 +18,26 @@ export default function TimelineEditorForm({
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (initialData) {
-      setFormData({
-        title: initialData.title || "",
-        slug: initialData.slug || "",
-        summary: initialData.summary || "",
-        category: initialData.category || "",
-        status: initialData.status || "published",
-      });
-    } else {
-      setFormData({
-        title: "",
-        slug: "",
-        summary: "",
-        category: "",
-        status: "published",
-      });
-    }
+    const frame = window.requestAnimationFrame(() => {
+      if (initialData) {
+        setFormData({
+          title: initialData.title || "",
+          slug: initialData.slug || "",
+          summary: initialData.summary || "",
+          category: initialData.category || "",
+          status: initialData.status || "published",
+        });
+      } else {
+        setFormData({
+          title: "",
+          slug: "",
+          summary: "",
+          category: "",
+          status: "published",
+        });
+      }
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [initialData]);
 
   const generateSlug = (value) => {

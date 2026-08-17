@@ -196,6 +196,7 @@ export const getPublishedArticles = async () => {
 
 export const getArticleBySlug = async (slug) => {
   try {
+    // The URL slug is already stored. Regenerating it truncated long slugs.
     const normalizedSlug = slug?.toString().trim().toLowerCase();
 
     const q = query(
@@ -436,8 +437,8 @@ export const timelinesCollection = collection(db, "timelines");
 
 export const getTimelineBySlug = async (slug) => {
   try {
-    const normalizedSlug = generateSlug(slug);
-
+    const normalizedSlug = slug?.toString().trim().toLowerCase();
+ 
     const q = query(
       timelinesCollection,
       where("slug", "==", normalizedSlug),

@@ -53,4 +53,4 @@ export const ARTICLE_SORT_OPTIONS = [
   "most-reacted",
 ];
 
-export const DEFAULT_OG_IMAGE = "/images/default-og.jpg";
+export const DEFAULT_OG_IMAGE = "/opengraph-image";

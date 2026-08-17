@@ -29,8 +29,8 @@ export async function generateMetadata({ params }) {
   return generateSEO({
     title: `${tagName} Articles | Contextra`,
     description: `Explore articles, insights, and discussions related to ${tagName.toLowerCase()} on Contextra.`,
-    image: "/images/default-og.jpg",
-    url: `https://contextra.vercel.app/tag/${slug}`,
+    image: "/opengraph-image",
+    url: `/tag/${slug}`,
   });
 }
 

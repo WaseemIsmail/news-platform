@@ -6,8 +6,8 @@ export async function generateMetadata() {
     title: "Disclaimer | Contextra",
     description:
       "Read the Contextra disclaimer regarding editorial opinions, fact-check reports, third-party sources, and general website usage.",
-    image: "/images/default-og.jpg",
-    url: "https://contextra.vercel.app/disclaimer",
+    image: "/opengraph-image",
+    url: "/disclaimer",
   });
 }
 

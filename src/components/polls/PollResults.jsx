@@ -11,17 +11,17 @@ export default function PollResults({ poll }) {
     );
 
   return (
-    <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+    <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-950">
       <div className="mb-5">
-        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-700">
+        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-700 dark:text-amber-400">
           Poll Results
         </p>
 
-        <h3 className="mt-2 text-lg font-semibold text-slate-900">
+        <h3 className="mt-2 text-lg font-semibold text-slate-900 dark:text-white">
           Community Response
         </h3>
 
-        <p className="mt-2 text-sm leading-7 text-slate-600">
+        <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
           Total votes: {totalVotes}
         </p>
       </div>
@@ -35,16 +35,16 @@ export default function PollResults({ poll }) {
           return (
             <div key={`${option.label}-${index}`}>
               <div className="mb-2 flex items-center justify-between gap-4">
-                <span className="text-sm font-medium text-slate-700">
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
                   {option.label}
                 </span>
 
-                <span className="text-sm text-slate-500">
+                <span className="text-sm text-slate-500 dark:text-slate-400">
                   {percentage}% ({votes} votes)
                 </span>
               </div>
 
-              <div className="h-3 w-full overflow-hidden rounded-full bg-slate-200">
+              <div className="h-3 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
                 <div
                   className="h-full rounded-full bg-amber-500 transition-all duration-500"
                   style={{ width: `${percentage}%` }}

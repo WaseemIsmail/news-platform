@@ -2,306 +2,79 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { auth, db } from "@/lib/firebase";
-import { onAuthStateChanged, signOut } from "firebase/auth";
 import { collection, getDocs, query, where } from "firebase/firestore";
+import AccountShell from "@/components/account/AccountShell";
+import AccountState from "@/components/account/AccountState";
+import { useAuthContext } from "@/context/AuthContext";
+import { db } from "@/lib/firebase";
+import { formatArticleDate } from "@/lib/articlePresentation";
+
+const quickLinks = [
+  { href: "/bookmarks", title: "Continue reading", description: "Return to stories you saved for later.", action: "Open saved stories" },
+  { href: "/notifications", title: "Stay in the conversation", description: "See replies, reactions, and account updates.", action: "View notifications" },
+  { href: "/latest", title: "Discover something new", description: "Explore the newest published reporting.", action: "Browse latest" },
+];
 
 export default function ProfilePage() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  const [savedArticlesCount, setSavedArticlesCount] = useState(0);
-  const [commentsCount, setCommentsCount] = useState(0);
-  const [reactionsCount, setReactionsCount] = useState(0);
-  const [notificationsCount, setNotificationsCount] = useState(0);
-
-  const getDisplayName = (currentUser) => {
-    return (
-      currentUser?.displayName ||
-      currentUser?.email?.split("@")[0] ||
-      "Contextra Reader"
-    );
-  };
-
-  const getInitial = (currentUser) => {
-    const name = getDisplayName(currentUser);
-    return name ? name.charAt(0).toUpperCase() : "C";
-  };
-
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      window.location.href = "/login";
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
-  };
-
-  const fetchUserStats = async (currentUser) => {
-    try {
-      const savedBookmarks = JSON.parse(
-        localStorage.getItem("bookmarkedArticles") || "[]"
-      );
-
-      setSavedArticlesCount(
-        Array.isArray(savedBookmarks) ? savedBookmarks.length : 0
-      );
-
-      const commentsQuery = query(
-        collection(db, "comments"),
-        where("userId", "==", currentUser.uid)
-      );
-
-      const commentsSnapshot = await getDocs(commentsQuery);
-      setCommentsCount(commentsSnapshot.size);
-
-      const reactionsQuery = query(
-        collection(db, "reactions"),
-        where("userId", "==", currentUser.uid)
-      );
-
-      const reactionsSnapshot = await getDocs(reactionsQuery);
-      setReactionsCount(reactionsSnapshot.size);
-
-      const notificationsQuery = query(
-        collection(db, "notifications"),
-        where("userId", "==", currentUser.uid)
-      );
-
-      const notificationsSnapshot = await getDocs(notificationsQuery);
-      setNotificationsCount(notificationsSnapshot.size);
-    } catch (error) {
-      console.error("Failed to fetch profile stats:", error);
-    }
-  };
+  const { user, firebaseUser, loading, logout } = useAuthContext();
+  const [stats, setStats] = useState({ saved: 0, comments: 0, reactions: 0, notifications: 0 });
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsMessage, setStatsMessage] = useState("");
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
+    if (!user?.uid) return undefined;
+    let active = true;
 
-      if (currentUser) {
-        await fetchUserStats(currentUser);
+    const loadStats = async () => {
+      try {
+        const [commentsSnapshot, reactionsSnapshot, notificationsSnapshot] = await Promise.all([
+          getDocs(query(collection(db, "comments"), where("userId", "==", user.uid))),
+          getDocs(query(collection(db, "reactions"), where("userId", "==", user.uid))),
+          getDocs(query(collection(db, "notifications"), where("userId", "==", user.uid))),
+        ]);
+        const savedIds = JSON.parse(localStorage.getItem("bookmarkedArticles") || "[]");
+        if (active) setStats({ saved: Array.isArray(savedIds) ? savedIds.length : 0, comments: commentsSnapshot.size, reactions: reactionsSnapshot.size, notifications: notificationsSnapshot.size });
+      } catch (statsError) {
+        console.error("Failed to load reader activity:", statsError);
+        if (active) setStatsMessage("Some activity totals are temporarily unavailable.");
+      } finally {
+        if (active) setStatsLoading(false);
       }
+    };
 
-      setLoading(false);
-    });
+    loadStats();
+    return () => { active = false; };
+  }, [user?.uid]);
 
-    return () => unsubscribe();
-  }, []);
+  if (loading) return <AccountState loading />;
+  if (!user) return <AccountState title="Your reader profile is private" description="Sign in to access saved stories, notifications, reactions, and account settings." />;
 
-  if (loading) {
-    return (
-      <main className="min-h-screen bg-white">
-        <div className="mx-auto max-w-5xl px-6 py-20 text-center">
-          <p className="text-slate-600">Loading profile...</p>
-        </div>
-      </main>
-    );
-  }
-
-  if (!user) {
-    return (
-      <main className="min-h-screen bg-white">
-        <div className="mx-auto max-w-5xl px-6 py-20 text-center">
-          <h1 className="text-3xl font-bold text-slate-900">
-            Please Login First
-          </h1>
-
-          <p className="mt-4 text-slate-600">
-            You need to sign in to access your profile.
-          </p>
-
-          <Link
-            href="/login"
-            className="mt-8 inline-block rounded-xl bg-slate-900 px-6 py-3 text-sm font-medium text-white transition hover:bg-slate-800"
-          >
-            Go to Login
-          </Link>
-        </div>
-      </main>
-    );
-  }
+  const displayName = user.fullName || user.displayName || user.email?.split("@")[0] || "Contextra Reader";
+  const initial = displayName.charAt(0).toUpperCase();
+  const memberSince = formatArticleDate(user.createdAt, "Contextra reader");
+  const statItems = [
+    { label: "Saved stories", value: stats.saved, href: "/bookmarks" },
+    { label: "Comments", value: stats.comments },
+    { label: "Reactions", value: stats.reactions },
+    { label: "Notifications", value: stats.notifications, href: "/notifications" },
+  ];
 
   return (
-    <main className="min-h-screen bg-white">
-      {/* Header */}
-      <section className="border-b border-slate-200 bg-slate-50">
-        <div className="mx-auto max-w-5xl px-6 py-16">
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-700">
-            My Profile
-          </p>
+    <AccountShell eyebrow="Reader account" title={`Welcome, ${displayName}`} description="Your private place to organise reading, follow conversations, and manage your Contextra account." actions={<><Link href="/settings" className="rounded-xl border border-slate-300 px-5 py-3 text-sm font-bold transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-900">Edit profile</Link><button type="button" onClick={async () => { await logout(); window.location.href = "/"; }} className="rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-amber-400 dark:text-slate-950">Sign out</button></>}>
+      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="relative bg-slate-950 p-6 text-white sm:p-8"><div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(245,158,11,0.3),_transparent_35%)]" /><div className="relative flex flex-col gap-5 sm:flex-row sm:items-center"><div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-3xl bg-amber-400 text-3xl font-black text-slate-950">{initial}</div><div><h2 className="text-2xl font-black">{displayName}</h2><p className="mt-1 text-sm text-slate-300">{user.email}</p><div className="mt-3 flex flex-wrap gap-2"><span className="rounded-full bg-white/10 px-3 py-1 text-xs font-bold capitalize">{user.role || "Reader"}</span><span className={`rounded-full px-3 py-1 text-xs font-bold ${firebaseUser?.emailVerified ? "bg-emerald-400/15 text-emerald-300" : "bg-amber-400/15 text-amber-300"}`}>{firebaseUser?.emailVerified ? "Email verified" : "Email verification pending"}</span><span className="rounded-full bg-white/10 px-3 py-1 text-xs font-bold">Member since {memberSince}</span></div></div></div></div>
 
-          <h1 className="mt-3 text-4xl font-bold text-slate-900">
-            Welcome Back, {getDisplayName(user)}
-          </h1>
-
-          <p className="mt-4 max-w-2xl text-slate-600">
-            Manage your account, saved articles, notifications, and activity
-            across Contextra.
-          </p>
+        <div className="grid grid-cols-2 divide-x divide-y divide-slate-200 dark:divide-slate-800 lg:grid-cols-4 lg:divide-y-0">
+          {statItems.map((item) => {
+            const content = <><span className="text-sm font-semibold text-slate-500 dark:text-slate-400">{item.label}</span><strong className="mt-2 block text-3xl font-black">{statsLoading ? "—" : item.value}</strong></>;
+            return item.href ? <Link key={item.label} href={item.href} className="p-5 transition hover:bg-slate-50 dark:hover:bg-slate-800">{content}</Link> : <div key={item.label} className="p-5">{content}</div>;
+          })}
         </div>
       </section>
 
-      {/* Profile Content */}
-      <section className="py-16">
-        <div className="mx-auto max-w-5xl px-6">
-          <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-            <div className="flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
-              {/* User Info */}
-              <div className="flex items-center gap-5">
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-slate-900 text-2xl font-bold text-white">
-                  {getInitial(user)}
-                </div>
+      {statsMessage && <p className="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:bg-amber-500/10 dark:text-amber-300" role="status">{statsMessage}</p>}
 
-                <div>
-                  <h2 className="text-2xl font-semibold text-slate-900">
-                    {getDisplayName(user)}
-                  </h2>
-
-                  <p className="mt-2 text-sm text-slate-600">{user.email}</p>
-
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                      Reader
-                    </span>
-
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-medium ${
-                        user.emailVerified
-                          ? "bg-green-100 text-green-700"
-                          : "bg-amber-100 text-amber-700"
-                      }`}
-                    >
-                      {user.emailVerified
-                        ? "Email Verified"
-                        : "Email Not Verified"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex flex-wrap gap-3">
-                <Link
-                  href="/bookmarks"
-                  className="rounded-xl border border-slate-300 px-5 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                >
-                  Saved Articles
-                </Link>
-
-                <Link
-                  href="/notifications"
-                  className="rounded-xl border border-slate-300 px-5 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                >
-                  Notifications
-                </Link>
-
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800"
-                >
-                  Logout
-                </button>
-              </div>
-            </div>
-
-            {/* Stats - Card Boxes */}
-            <div className="mt-10 grid grid-cols-2 gap-4 lg:grid-cols-4">
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
-                <p className="text-sm font-medium text-slate-500">
-                  Saved Articles
-                </p>
-
-                <h3 className="mt-3 text-3xl font-bold text-slate-900">
-                  {savedArticlesCount}
-                </h3>
-              </div>
-
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
-                <p className="text-sm font-medium text-slate-500">
-                  Comments Posted
-                </p>
-
-                <h3 className="mt-3 text-3xl font-bold text-slate-900">
-                  {commentsCount}
-                </h3>
-              </div>
-
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
-                <p className="text-sm font-medium text-slate-500">
-                  Reactions Given
-                </p>
-
-                <h3 className="mt-3 text-3xl font-bold text-slate-900">
-                  {reactionsCount}
-                </h3>
-              </div>
-
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
-                <p className="text-sm font-medium text-slate-500">
-                  Notifications
-                </p>
-
-                <h3 className="mt-3 text-3xl font-bold text-slate-900">
-                  {notificationsCount}
-                </h3>
-              </div>
-            </div>
-
-            {/* Quick Access */}
-            <div className="mt-10 grid gap-4 md:grid-cols-4">
-              <Link
-                href="/bookmarks"
-                className="rounded-2xl border border-slate-200 p-5 transition hover:bg-slate-50"
-              >
-                <h4 className="font-semibold text-slate-900">
-                  Saved Articles
-                </h4>
-
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  View articles you have saved for later.
-                </p>
-              </Link>
-
-              <Link
-                href="/notifications"
-                className="rounded-2xl border border-slate-200 p-5 transition hover:bg-slate-50"
-              >
-                <h4 className="font-semibold text-slate-900">
-                  Notifications
-                </h4>
-
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  Check updates, replies, and platform alerts.
-                </p>
-              </Link>
-
-              <Link
-                href="/opinion"
-                className="rounded-2xl border border-slate-200 p-5 transition hover:bg-slate-50"
-              >
-                <h4 className="font-semibold text-slate-900">Opinion</h4>
-
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  Read editorials and deeper public analysis.
-                </p>
-              </Link>
-
-              <Link
-                href="/timeline"
-                className="rounded-2xl border border-slate-200 p-5 transition hover:bg-slate-50"
-              >
-                <h4 className="font-semibold text-slate-900">Timelines</h4>
-
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  Follow stories through chronological breakdowns.
-                </p>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-    </main>
+      <section className="mt-8"><div className="mb-5"><p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-700 dark:text-amber-400">Quick access</p><h2 className="mt-2 text-2xl font-black tracking-tight">What would you like to do?</h2></div><div className="grid gap-4 md:grid-cols-3">{quickLinks.map((item) => <Link key={item.href} href={item.href} className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900"><h3 className="text-lg font-black">{item.title}</h3><p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{item.description}</p><span className="mt-6 inline-flex text-sm font-bold text-amber-700 dark:text-amber-400">{item.action} <span className="ml-2 transition-transform group-hover:translate-x-1">→</span></span></Link>)}</div></section>
+    </AccountShell>
   );
 }

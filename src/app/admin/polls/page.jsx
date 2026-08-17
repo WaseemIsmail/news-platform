@@ -426,7 +426,7 @@ export default function AdminPollsPage() {
               Are you sure you want to delete this poll:
               <span className="font-semibold text-slate-900">
                 {" "}
-                "{selectedPoll?.question}"
+                &ldquo;{selectedPoll?.question}&rdquo;
               </span>
               ? This action cannot be undone.
             </p>
