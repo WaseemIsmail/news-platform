@@ -57,6 +57,12 @@ body {
 
 .site-skip-link {
   top: calc(var(--safe-area-top) + 0.75rem);
+  transform: translateY(calc(-100% - var(--safe-area-top) - 1rem));
+}
+
+.site-skip-link:focus,
+.site-skip-link:focus-visible {
+  transform: translateY(0);
 }
 
 .mobile-navigation-header {

@@ -42,7 +42,12 @@ export const metadata = {
     title: "Contextra",
   },
   icons: {
-    apple: "/contextra-apple-touch-icon.png",
+    icon: [
+      { url: "/contextra-app-icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/contextra-app-icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: [{ url: "/contextra-apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
   formatDetection: { email: false, address: false, telephone: false },
 };
@@ -111,7 +116,7 @@ export default function RootLayout({ children }) {
         />
         <a
           href="#main-content"
-          className="site-skip-link fixed left-4 z-[110] -translate-y-24 rounded-lg bg-slate-950 px-4 py-3 text-sm font-semibold text-white shadow-xl transition focus:translate-y-0 dark:bg-amber-500 dark:text-slate-950"
+          className="site-skip-link fixed left-4 z-[110] rounded-lg bg-slate-950 px-4 py-3 text-sm font-semibold text-white shadow-xl transition dark:bg-amber-500 dark:text-slate-950"
         >
           Skip to main content
         </a>

@@ -8,7 +8,7 @@ export const siteMetadata = {
   author: "Contextra",
   language: "en",
   locale: "en_US",
-  publisherLogo: "/favicon.ico",
+  publisherLogo: "/contextra-app-icon-512.png",
   keywords: [
     "Contextra",
     "news analysis",

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import BrandMark from "./BrandMark";
 
 const groups = [
   {
@@ -64,7 +65,7 @@ export default function Footer() {
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 md:py-16">
         <div className="grid gap-10 xl:grid-cols-[1.1fr_1.9fr] xl:gap-12">
           <div>
-            <Link href="/" className="inline-flex items-center gap-3" aria-label="Contextra home"><span className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-400 text-lg font-black text-slate-950" aria-hidden="true">C</span><span><strong className="block text-2xl font-black tracking-[-0.04em]">Contextra</strong><span className="mt-1 block text-[0.62rem] font-bold uppercase tracking-[0.18em] text-slate-400">News with context</span></span></Link>
+            <Link href="/" className="inline-flex items-center gap-3" aria-label="Contextra home"><BrandMark className="h-11 w-11 rounded-xl" /><span><strong className="block text-2xl font-black tracking-[-0.04em]">Contextra</strong><span className="mt-1 block text-[0.62rem] font-bold uppercase tracking-[0.18em] text-slate-400">News with context</span></span></Link>
             <p className="mt-6 max-w-md text-sm leading-7 text-slate-300">Understand current events through sourced reporting, useful background, clearly labelled analysis, and timelines that connect the story.</p>
             <div className="mt-6 flex flex-wrap gap-2" aria-label="Contextra editorial principles"><span className="rounded-full border border-slate-700 px-3 py-1.5 text-xs font-bold text-slate-300">Sources linked</span><span className="rounded-full border border-slate-700 px-3 py-1.5 text-xs font-bold text-slate-300">Analysis labelled</span><span className="rounded-full border border-slate-700 px-3 py-1.5 text-xs font-bold text-slate-300">Corrections welcomed</span></div>
           </div>

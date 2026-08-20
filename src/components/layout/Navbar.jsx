@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAppContext } from "@/context/AppContext";
 import { useAuthContext } from "@/context/AuthContext";
 import { auth } from "@/lib/firebase";
+import BrandMark from "./BrandMark";
 import MobileMenu from "./MobileMenu";
 
 const navLinks = [
@@ -37,7 +38,7 @@ const readerLinks = [
 function Brand() {
   return (
     <Link href="/" className="group flex min-w-0 items-center gap-2.5 sm:gap-3" aria-label="Contextra home">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-sm font-black text-white shadow-sm transition group-hover:bg-amber-500 group-hover:text-slate-950 dark:bg-amber-400 dark:text-slate-950 dark:group-hover:bg-amber-300 sm:h-10 sm:w-10 sm:text-base" aria-hidden="true">C</span>
+      <BrandMark className="h-9 w-9 rounded-xl shadow-sm transition group-hover:scale-[1.04] sm:h-10 sm:w-10" />
       <span>
         <span className="block text-lg font-black leading-none tracking-[-0.035em] text-slate-950 dark:text-white sm:text-xl">Contextra</span>
         <span className="mt-1 hidden text-[0.62rem] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400 sm:block">News with context</span>
