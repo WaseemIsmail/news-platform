@@ -126,7 +126,6 @@ export default async function ArticlePage({ params }) {
     sourceUsageBasis: article.sourceUsageBasis || "facts_and_attribution",
     articleType: article.articleType || article.editorialMode || "explainer",
     verificationConfidence: Number(article.verificationConfidence || 0),
-    verificationNotice: article.verificationNotice || "",
     pollId: article.pollId || "",
     publishedAt: serializeDate(article.publishedAt),
     createdAt: serializeDate(article.createdAt),
@@ -160,6 +159,10 @@ export default async function ArticlePage({ params }) {
     .trim()
     .split(/\s+/)
     .filter(Boolean).length;
+  const analysisParagraphs = safeArticle.ourView
+    .split(/\n\s*\n/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
   const structuredData = {
     "@context": "https://schema.org",
     "@graph": [
@@ -264,11 +267,6 @@ export default async function ArticlePage({ params }) {
               </div>
               {safeArticle.sourceName && <p className="mt-4 text-sm leading-6 text-slate-700 dark:text-slate-300">This article references reporting from: {safeArticle.sourceName}.</p>}
               {safeArticle.sourceNote && <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">{safeArticle.sourceNote}</p>}
-              {safeArticle.verificationNotice && (
-                <p className="mt-3 rounded-xl border border-slate-200 bg-white p-3 text-xs leading-5 text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
-                  {safeArticle.verificationNotice}
-                </p>
-              )}
               {safeArticle.sourceUrls.length > 0 && (
                 <ul className="mt-5 space-y-3">
                   {safeArticle.sourceUrls.map((url) => (
@@ -287,7 +285,13 @@ export default async function ArticlePage({ params }) {
             <section className="mt-10 rounded-3xl border-l-4 border-amber-500 bg-amber-50 p-6 dark:bg-slate-900 sm:p-8">
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-800 dark:text-amber-400">Contextra analysis</p>
               <h2 className="mt-2 text-2xl font-black tracking-tight">Why this story matters</h2>
-              <p className="mt-4 text-base leading-8 text-slate-700 dark:text-slate-200">{safeArticle.ourView}</p>
+              <div className="mt-4 space-y-4">
+                {analysisParagraphs.map((paragraph, index) => (
+                  <p key={`${index}-${paragraph.slice(0, 24)}`} className="text-base leading-8 text-slate-700 dark:text-slate-200">
+                    {paragraph}
+                  </p>
+                ))}
+              </div>
               <p className="mt-4 text-xs font-medium text-slate-500 dark:text-slate-400">This section contains editorial interpretation, separate from the reported article above.</p>
             </section>
           )}

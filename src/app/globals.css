@@ -8,6 +8,11 @@
   --surface: #ffffff;
   --surface-muted: #f8fafc;
   --border: #e2e8f0;
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-left: env(safe-area-inset-left, 0px);
+  --site-navbar-height: 4.25rem;
   color-scheme: light;
 }
 
@@ -30,6 +35,7 @@
 html {
   background: var(--background);
   scroll-behavior: smooth;
+  scroll-padding-top: calc(var(--site-navbar-height) + var(--safe-area-top) + 1rem);
 }
 
 body {
@@ -40,6 +46,39 @@ body {
   font-family: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   transition: background-color 180ms ease, color 180ms ease;
   text-rendering: optimizeLegibility;
+}
+
+/* Keep the installed iPhone/PWA interface below the Dynamic Island while the
+   navbar background fills the translucent status-bar area. */
+.site-navbar {
+  box-sizing: content-box;
+  padding-top: var(--safe-area-top);
+}
+
+.site-skip-link {
+  top: calc(var(--safe-area-top) + 0.75rem);
+}
+
+.mobile-navigation-header {
+  padding-top: calc(var(--safe-area-top) + 0.75rem);
+}
+
+.article-reader-toolbar {
+  top: calc(var(--site-navbar-height) + var(--safe-area-top) + 0.5rem);
+}
+
+@media (min-width: 640px) {
+  :root {
+    --site-navbar-height: 4.75rem;
+  }
+
+  .mobile-navigation-header {
+    padding-top: calc(var(--safe-area-top) + 1rem);
+  }
+
+  .article-reader-toolbar {
+    top: calc(var(--site-navbar-height) + var(--safe-area-top) + 0.25rem);
+  }
 }
 
 h1,

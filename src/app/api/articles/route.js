@@ -3,6 +3,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebaseAdmin";
 import { buildPublishDistribution } from "@/lib/indexNow";
 import { calculateSeoQuality, enrichArticleSeo } from "@/lib/seoQuality";
+import { validateOurViewQuality } from "@/utils/editorialQuality";
 import { validateArticle } from "@/utils/validationSchemas";
 
 export async function GET() {
@@ -46,7 +47,9 @@ export async function POST(request) {
     const status = body.status || "draft";
     const seoQuality = calculateSeoQuality(body);
     const safetyErrors = [];
+    const ourViewError = validateOurViewQuality(body.ourView, body);
 
+    if (ourViewError) safetyErrors.push(ourViewError);
     if (!["draft", "published"].includes(status)) {
       safetyErrors.push("Status must be draft or published.");
     }
@@ -120,7 +123,6 @@ export async function POST(request) {
             editorialMode: body.editorialMode || body.articleType || "explainer",
             verification: body.verification || {},
             verificationConfidence: Number(body.verificationConfidence || 0),
-            verificationNotice: body.verificationNotice || "",
             sourcePolicy: body.sourcePolicy || {},
             automationDecision: body.automationDecision || {},
             imagePrompt: body.imagePrompt || "",
@@ -217,7 +219,6 @@ export async function POST(request) {
       editorialMode: body.editorialMode || body.articleType || "explainer",
       verification: body.verification || {},
       verificationConfidence: Number(body.verificationConfidence || 0),
-      verificationNotice: body.verificationNotice || "",
       sourcePolicy: body.sourcePolicy || {},
       automationDecision: body.automationDecision || {},
       socialCaption: body.socialCaption || "",

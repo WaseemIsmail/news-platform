@@ -37,7 +37,7 @@ export default function ArticleReader({ children, hasSources = false }) {
 
   return (
     <section className={`reader-shell reader-size-${size}`} aria-label="Reading view">
-      <div className="sticky top-[4.5rem] z-20 mt-8 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white/95 p-2.5 shadow-lg shadow-slate-950/5 backdrop-blur-xl dark:border-slate-700 dark:bg-slate-900/95 sm:top-20">
+      <div className="article-reader-toolbar sticky z-20 mt-8 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white/95 p-2.5 shadow-lg shadow-slate-950/5 backdrop-blur-xl dark:border-slate-700 dark:bg-slate-900/95">
         <div className="flex min-w-0 items-center gap-2 pl-2">
           <span className="hidden text-xs font-black uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400 sm:inline">Reading size</span>
           <div className="flex rounded-xl bg-slate-100 p-1 dark:bg-slate-950" role="group" aria-label="Article text size">

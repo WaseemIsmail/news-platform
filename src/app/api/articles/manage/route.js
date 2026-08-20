@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebaseAdmin";
 import { calculateSeoQuality, enrichArticleSeo } from "@/lib/seoQuality";
+import { validateOurViewQuality } from "@/utils/editorialQuality";
 import { readingTime } from "@/utils/readingTime";
 import { validateArticle } from "@/utils/validationSchemas";
 
@@ -87,6 +88,8 @@ function mapArticle(doc) {
     homepageOrder: Number(article.homepageOrder ?? 999),
     sourceName: article.sourceName || "",
     sourceUrls: Array.isArray(article.sourceUrls) ? article.sourceUrls : [],
+    articleType: article.articleType || article.editorialMode || "explainer",
+    editorialMode: article.editorialMode || article.articleType || "explainer",
     status: article.status || "draft",
     readingTime: article.readingTime || "",
     seoQuality: article.seoQuality || null,
@@ -150,11 +153,8 @@ function cleanUpdates(updates) {
 
 function validationErrors(article) {
   const errors = validateArticle(article);
-  if (!article.ourView?.trim()) {
-    errors.ourView = "Why this story matters is required.";
-  } else if (article.ourView.trim().length < 40) {
-    errors.ourView = "Why this story matters must be at least 40 characters.";
-  }
+  const ourViewError = validateOurViewQuality(article.ourView, article);
+  if (ourViewError) errors.ourView = ourViewError;
   if (article.title?.length > 180) errors.title = "Title must be 180 characters or fewer.";
   if (article.summary?.length > 1000) errors.summary = "Summary must be 1,000 characters or fewer.";
   if (article.content?.length > 100000) errors.content = "Content is too long.";

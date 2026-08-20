@@ -12,6 +12,16 @@ import { siteMetadata } from "@/lib/metadata";
 
 const gaId = process.env.NEXT_PUBLIC_GA_ID;
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#020617" },
+  ],
+};
+
 export const metadata = {
   ...generateSEO({
     title: "Contextra | News, Analysis, Opinion & Timelines",
@@ -101,7 +111,7 @@ export default function RootLayout({ children }) {
         />
         <a
           href="#main-content"
-          className="fixed left-4 top-3 z-[100] -translate-y-24 rounded-lg bg-slate-950 px-4 py-3 text-sm font-semibold text-white shadow-xl transition focus:translate-y-0 dark:bg-amber-500 dark:text-slate-950"
+          className="site-skip-link fixed left-4 z-[110] -translate-y-24 rounded-lg bg-slate-950 px-4 py-3 text-sm font-semibold text-white shadow-xl transition focus:translate-y-0 dark:bg-amber-500 dark:text-slate-950"
         >
           Skip to main content
         </a>
