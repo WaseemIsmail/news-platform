@@ -7,7 +7,7 @@ export default function BrandMark({ className = "" }) {
       aria-hidden="true"
     >
       <Image
-        src="/contextra-app-icon-192.png"
+        src="/contextra-app-icon-v2-192.png"
         alt=""
         fill
         sizes="48px"
