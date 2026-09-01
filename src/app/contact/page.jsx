@@ -33,36 +33,24 @@ export default function ContactPage() {
 
               <p className="mt-4 text-sm leading-8 text-slate-600">
                 For questions about Contextra, editorial feedback, platform issues,
-                or collaboration opportunities, contact us using the details below.
+                corrections, or collaboration opportunities, contact us using the
+                email address below.
               </p>
 
-              <div className="mt-8 space-y-5">
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">
-                    Email
-                  </p>
-                  <p className="mt-1 text-sm text-slate-600">
-                    hello@contextra.com
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">
-                    Support
-                  </p>
-                  <p className="mt-1 text-sm text-slate-600">
-                    support@contextra.com
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">
-                    Partnerships
-                  </p>
-                  <p className="mt-1 text-sm text-slate-600">
-                    partners@contextra.com
-                  </p>
-                </div>
+              <div className="mt-8">
+                <p className="text-sm font-semibold text-slate-900">
+                  Contact email
+                </p>
+                <a
+                  href="mailto:contextranews@gmail.com"
+                  className="mt-2 inline-flex break-all text-base font-semibold text-amber-700 underline decoration-amber-300 underline-offset-4 transition hover:text-amber-800"
+                >
+                  contextranews@gmail.com
+                </a>
+                <p className="mt-3 text-sm leading-7 text-slate-500">
+                  Use this inbox for general inquiries, account support, editorial
+                  corrections, and partnership requests.
+                </p>
               </div>
             </div>
 
